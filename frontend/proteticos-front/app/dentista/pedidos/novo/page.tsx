@@ -114,27 +114,31 @@ export default function NovoPedido() {
               </select>
             </div>
 
-            {/* Tipo de Serviço */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tipo de Prótese *
-              </label>
-              <select
-                value={dados.tipoServico}
-                onChange={(e) => setDados({...dados, tipoServico: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              >
-                <option value="">Selecione o tipo</option>
-                <option value="COROA">Coroa</option>
-                <option value="PONTE">Ponte</option>
-                <option value="PROTESE_TOTAL">Prótese Total</option>
-                <option value="PROTESE_PARCIAL">Prótese Parcial</option>
-                <option value="FACETA">Faceta</option>
-                <option value="ONLAY">Onlay/Inlay</option>
-                <option value="IMPLANTE">Prótese sobre Implante</option>
-              </select>
-            </div>
+          {/* Tipo de Serviço */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tipo de Serviço *
+            </label>
+            <select
+              value={dados.tipoServico}
+              onChange={(e) => setDados({...dados, tipoServico: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            >
+              <option value="">Selecione o tipo</option>
+              <option value="COROA">Coroa</option>
+              <option value="PONTE_FIXA">Ponte Fixa</option>  {/* Alterado de "PONTE" para "PONTE_FIXA" */}
+              <option value="PROTESE_TOTAL">Prótese Total</option>
+              <option value="PROTESE_PARCIAL">Prótese Parcial</option>
+              <option value="PROVISORIO">Provisório</option>  {/* Adicionado */}
+              <option value="ZIRCONIA">Zircônia</option>      {/* Adicionado */}
+              <option value="RESINA">Resina</option>          {/* Adicionado */}
+              <option value="IMPLANTE">Implante</option>
+              <option value="ORTODONTIA">Ortodontia</option>  {/* Adicionado */}
+              <option value="OUTRO">Outro</option>            {/* Adicionado */}
+              {/* Removidos: FACETA, ONLAY */}
+            </select>
+          </div>
 
             {/* Data Prevista */}
             <div>

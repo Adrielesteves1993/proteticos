@@ -1,6 +1,6 @@
 package com.proteticos.ordermanagement.service;
 
-import com.proteticos.ordermanagement.dto.*;
+import com.proteticos.ordermanagement.DTO.*;
 import com.proteticos.ordermanagement.model.*;
 import com.proteticos.ordermanagement.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,28 +49,25 @@ public class PedidoService {
         dto.setStatus(pedido.getStatus());
         dto.setDataCriacao(pedido.getDataCriacao());
 
-        // Converter dentista
+        // Converter dentista - USANDO APENAS CAMPOS QUE EXISTEM
         if (pedido.getDentista() != null) {
             DentistaSimplesDTO dentistaDTO = new DentistaSimplesDTO();
             dentistaDTO.setId(pedido.getDentista().getId());
             dentistaDTO.setNome(pedido.getDentista().getNome());
             dentistaDTO.setEmail(pedido.getDentista().getEmail());
             dentistaDTO.setCro(pedido.getDentista().getCro());
-            dentistaDTO.setEspecialidade(pedido.getDentista().getEspecialidade());
+            // REMOVER: dentistaDTO.setEspecialidade(...); ← Não existe
             dto.setDentista(dentistaDTO);
         }
 
-        // Converter protético - COM OS CAMPOS CORRETOS
+        // Converter protético - USANDO APENAS CAMPOS QUE EXISTEM
         if (pedido.getProtetico() != null) {
             ProteticoSimplesDTO proteticoDTO = new ProteticoSimplesDTO();
             proteticoDTO.setId(pedido.getProtetico().getId());
             proteticoDTO.setNome(pedido.getProtetico().getNome());
             proteticoDTO.setEmail(pedido.getProtetico().getEmail());
-            proteticoDTO.setRegistroProfissional(pedido.getProtetico().getRegistroProfissional());
-            proteticoDTO.setEspecializacao(pedido.getProtetico().getEspecializacao());
-            proteticoDTO.setAceitaTerceirizacao(pedido.getProtetico().isAceitaTerceirizacao());
-            proteticoDTO.setValorHora(pedido.getProtetico().getValorHora());
-            proteticoDTO.setCapacidadePedidosSimultaneos(pedido.getProtetico().getCapacidadePedidosSimultaneos());
+
+            // REMOVER todos os outros setters que não existem
             dto.setProtetico(proteticoDTO);
         }
 

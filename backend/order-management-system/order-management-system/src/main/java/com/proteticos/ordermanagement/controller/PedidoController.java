@@ -1,7 +1,7 @@
 package com.proteticos.ordermanagement.controller;
 
-import com.proteticos.ordermanagement.dto.CriarPedidoRequest;
-import com.proteticos.ordermanagement.dto.PedidoResponseDTO;
+import com.proteticos.ordermanagement.DTO.CriarPedidoRequest;
+import com.proteticos.ordermanagement.DTO.PedidoResponseDTO;
 import com.proteticos.ordermanagement.model.Pedido;
 import com.proteticos.ordermanagement.model.StatusPedido;
 import com.proteticos.ordermanagement.model.Dentista;

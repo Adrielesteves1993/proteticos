@@ -1,4 +1,4 @@
-package com.proteticos.ordermanagement.dto;
+package com.proteticos.ordermanagement.DTO;
 
 import java.math.BigDecimal;
 
