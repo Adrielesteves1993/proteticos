@@ -65,15 +65,16 @@ export default function DashboardDentista() {
       setUsuario(usuario)
       console.log('🔍 Dentista logado - ID:', usuario.id, 'Nome:', usuario.nome)
       
-      // 2. Usa o endpoint específico para dentista
-      console.log(`🔄 Chamando: http://localhost:8080/api/pedidos/para-frontend/${usuario.id}`)
+      // 2. ✅ CORREÇÃO: Use o endpoint CORRETO que já existe no backend
+      console.log(`🔄 Chamando: http://localhost:8080/api/pedidos/dentista/${usuario.id}`)
       
-      const response = await fetch(`http://localhost:8080/api/pedidos/para-frontend/${usuario.id}`, {
+      const response = await fetch(`http://localhost:8080/api/pedidos/dentista/${usuario.id}`, {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json'
         }
       })
+    
       
       if (!response.ok) {
         const errorText = await response.text()

@@ -27,7 +27,6 @@ interface DashboardStats {
   terceirizados: number
   finalizados: number
   pedidosRecentes: Pedido[]
-  pedidosPrioritarios: Pedido[]
 }
 
 export default function DashboardProtetico() {
@@ -38,8 +37,7 @@ export default function DashboardProtetico() {
     emProducao: 0,
     terceirizados: 0,
     finalizados: 0,
-    pedidosRecentes: [],
-    pedidosPrioritarios: []
+    pedidosRecentes: []
   })
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
@@ -65,9 +63,9 @@ export default function DashboardProtetico() {
       console.log('🔍 Protético logado - ID:', usuario.id, 'Nome:', usuario.nome)
       
       // 2. Usa o endpoint específico para protético
-      console.log(`🔄 Chamando: http://localhost:8080/api/pedidos/para-frontend-protetico/${usuario.id}`)
+      console.log(`🔄 Chamando: http://localhost:8080/api/pedidos/protetico/${usuario.id}`)
       
-      const response = await fetch(`http://localhost:8080/api/pedidos/para-frontend-protetico/${usuario.id}`, {
+      const response = await fetch(`http://localhost:8080/api/pedidos/protetico/${usuario.id}`, {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json'
@@ -131,39 +129,21 @@ export default function DashboardProtetico() {
         pedido.status === 'FINALIZADA'
       ).length
       
-      // 6. Pega os 5 pedidos mais recentes
+      // 6. Pega os pedidos mais recentes (agora mostra mais pedidos)
       const pedidosRecentes = [...pedidos]
         .sort((a, b) => {
           const dateA = a.dataEntrada ? new Date(a.dataEntrada).getTime() : 0
           const dateB = b.dataEntrada ? new Date(b.dataEntrada).getTime() : 0
           return dateB - dateA
         })
-        .slice(0, 4)
-      
-      // 7. Pedeos prioritários (atrasados ou com prazo próximo)
-      const hoje = new Date()
-      const pedidosPrioritarios = pedidos
-        .filter(pedido => {
-          if (!pedido.dataPrevistaEntrega) return false
-          
-          const prazo = new Date(pedido.dataPrevistaEntrega)
-          const diferencaDias = Math.floor((prazo.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
-          
-          // Prioridade: atrasados ou com prazo em 2 dias
-          return diferencaDias <= 2 && 
-                 pedido.status !== 'ENTREGUE' && 
-                 pedido.status !== 'FINALIZADO' &&
-                 pedido.status !== 'CANCELADO'
-        })
-        .slice(0, 2)
+        .slice(0, 8) // Mostra 8 pedidos em vez de 4
       
       setStats({
         pedidosRecebidos,
         emProducao,
         terceirizados,
         finalizados,
-        pedidosRecentes,
-        pedidosPrioritarios
+        pedidosRecentes
       })
       
       console.log(`📊 Dashboard carregado: ${pedidosRecebidos} pedidos totais`)
@@ -236,35 +216,6 @@ export default function DashboardProtetico() {
     } else {
       return 'bg-gray-100 text-gray-800'
     }
-  }
-
-  const calcularDiasRestantes = (dataPrevista: string) => {
-    if (!dataPrevista) return null
-    
-    try {
-      const hoje = new Date()
-      const prazo = new Date(dataPrevista)
-      const diferencaMs = prazo.getTime() - hoje.getTime()
-      const diferencaDias = Math.ceil(diferencaMs / (1000 * 60 * 60 * 24))
-      
-      return diferencaDias
-    } catch {
-      return null
-    }
-  }
-
-  const getPrioridadeTexto = (dias: number) => {
-    if (dias < 0) return `Atrasado há ${Math.abs(dias)} dias`
-    if (dias === 0) return 'Entrega hoje!'
-    if (dias === 1) return 'Entrega amanhã'
-    return `${dias} dias restantes`
-  }
-
-  const getPrioridadeCor = (dias: number) => {
-    if (dias < 0) return 'bg-red-100 text-red-700 border-red-200'
-    if (dias === 0) return 'bg-orange-100 text-orange-700 border-orange-200'
-    if (dias <= 2) return 'bg-yellow-100 text-yellow-700 border-yellow-200'
-    return 'bg-blue-100 text-blue-700 border-blue-200'
   }
 
   const recarregarDashboard = () => {
@@ -460,144 +411,116 @@ export default function DashboardProtetico() {
             </div>
           </div>
         </div>
-
-        {/* Duas colunas: Atividades Recentes e Pedidos Prioritários */}
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Seção de Atividades Recentes */}
+        
+        {/* Seção de Pedidos Recentes (AGORA OCUPA 100% DA LARGURA) */}
+        <div className="mt-8">
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-semibold text-gray-900">📋 Pedidos Recentes</h3>
               <button 
                 onClick={handleVerPedidos}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
               >
-                Ver todos
+                Ver todos os pedidos →
               </button>
             </div>
             
             {stats.pedidosRecentes.length === 0 ? (
-              <div className="text-center py-8">
+              <div className="text-center py-12">
                 <div className="text-6xl mb-4">📭</div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum pedido recente</h3>
-                <p className="text-gray-600">Os dentistas ainda não enviaram pedidos para você</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Nenhum pedido recebido</h3>
+                <p className="text-gray-600 mb-6">Os dentistas ainda não enviaram pedidos para você</p>
+                <button 
+                  onClick={handleGerenciarConvites}
+                  className="bg-gradient-to-r from-green-500 to-green-600 text-white py-2 px-6 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md"
+                >
+                  📨 Convidar dentistas
+                </button>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2"> {/* Reduzido de space-y-3 */}
                 {stats.pedidosRecentes.map((pedido) => (
                   <div 
                     key={pedido.id} 
-                    className="flex items-center justify-between p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
+                    className="bg-blue-50 rounded-lg hover:bg-blue-100 transition-all duration-200 cursor-pointer border border-blue-100 hover:border-blue-200" /* Mudado rounded-xl para rounded-lg */
                     onClick={() => router.push(`/protetico/pedidos/${pedido.id}`)}
                   >
-                    <div className="flex items-center">
-                      <span className="text-blue-500 mr-3">🦷</span>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-medium">
-                            #{pedido.codigo} - {pedido.dentista.nome}
-                          </span>
-                          <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(pedido.status)}`}>
-                            {pedido.status.replace(/_/g, ' ')}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-600">
-                          {formatarTipoServico(pedido.tipoServico)}
-                          {pedido.dataPrevistaEntrega && ` • Prazo: ${formatarData(pedido.dataPrevistaEntrega)}`}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-xs text-gray-500">
-                      {formatarData(pedido.dataEntrada)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Seção de Pedidos Prioritários */}
-          <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl p-6 shadow-lg border border-red-100">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                <span className="text-red-500 text-xl mr-2">🚨</span>
-                <h3 className="text-lg font-semibold text-red-900">Pedidos Prioritários</h3>
-              </div>
-              <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
-                {stats.pedidosPrioritarios.length} urgente(s)
-              </span>
-            </div>
-            
-            {stats.pedidosPrioritarios.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-6xl mb-4">🎉</div>
-                <h3 className="text-lg font-semibold text-red-900 mb-2">Nenhum pedido urgente</h3>
-                <p className="text-red-700">Todos os pedidos estão dentro do prazo!</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {stats.pedidosPrioritarios.map((pedido) => {
-                  const diasRestantes = calcularDiasRestantes(pedido.dataPrevistaEntrega)
-                  
-                  return (
-                    <div 
-                      key={pedido.id} 
-                      className="bg-white rounded-lg border border-red-200 p-4 hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => router.push(`/protetico/pedidos/${pedido.id}`)}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-gray-900">
-                              #{pedido.codigo} - {formatarTipoServico(pedido.tipoServico)}
+                    <div className="p-3"> {/* Reduzido de p-4 */}
+                      {/* Cabeçalho */}
+                      <div className="flex justify-between items-center mb-2"> {/* Reduzido de mb-3 */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-blue-500">🦷</span>
+                          <div>
+                            <span className="font-medium text-gray-900 text-sm block"> {/* Adicionado text-sm */}
+                              #{pedido.codigo}
+                            </span>
+                            <span className="text-xs text-gray-600 block">
+                              {pedido.dentista.nome}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 mb-2">
-                            Dentista: {pedido.dentista.nome}
-                          </p>
                         </div>
-                        {diasRestantes !== null && (
-                          <span className={`text-xs px-3 py-1 rounded-full ${getPrioridadeCor(diasRestantes)} font-medium`}>
-                            {getPrioridadeTexto(diasRestantes)}
-                          </span>
-                        )}
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${getStatusColor(pedido.status)}`}> {/* Padding reduzido */}
+                          {pedido.status.replace(/_/g, ' ')}
+                        </span>
                       </div>
                       
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-700">
-                          Valor: {formatarValor(pedido.valorCobrado)}
-                        </span>
+                      {/* Informações do serviço - Reduzida */}
+                      <div className="mb-2"> {/* Reduzido de mb-3 */}
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-gray-900 text-sm"> {/* Adicionado text-sm */}
+                            {formatarTipoServico(pedido.tipoServico)}
+                          </span>
+                          {pedido.valorCobrado > 0 && (
+                            <span className="text-sm font-medium text-green-600"> {/* text-sm em vez de text-base */}
+                              {formatarValor(pedido.valorCobrado)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Informações adicionais - MUITO reduzida */}
+                      <div className="flex items-center justify-between text-xs text-gray-600"> {/* text-xs em vez de text-sm */}
+                        <div className="flex items-center gap-4">
+                          <span>Entrada: {formatarData(pedido.dataEntrada)}</span>
+                          {pedido.dataPrevistaEntrega && (
+                            <span>Previsão: {formatarData(pedido.dataPrevistaEntrega)}</span>
+                          )}
+                        </div>
                         <button 
                           onClick={(e) => {
                             e.stopPropagation()
                             router.push(`/protetico/pedidos/${pedido.id}`)
                           }}
-                          className="text-sm bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200 font-medium"
+                          className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700" /* Botão menor */
                         >
-                          Ver detalhes →
+                          Ver →
                         </button>
                       </div>
                     </div>
-                  )
-                })}
+                  </div>
+                ))}
               </div>
             )}
             
-            {/* Dica para pedidos sem urgência */}
-            {stats.pedidosPrioritarios.length === 0 && stats.pedidosRecebidos > 0 && (
-              <div className="mt-4 text-center">
-                <p className="text-sm text-green-700">
-                  🎉 Você tem {stats.pedidosRecebidos} pedidos em andamento, todos dentro do prazo!
-                </p>
+            {/* Se houver mais pedidos do que os mostrados */}
+            {stats.pedidosRecebidos > stats.pedidosRecentes.length && (
+              <div className="mt-6 text-center">
+                <button 
+                  onClick={handleVerPedidos}
+                  className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                >
+                  Mostrar todos os {stats.pedidosRecebidos} pedidos →
+                </button>
               </div>
             )}
           </div>
         </div>
 
         {/* Botão de recarregar */}
-        <div className="mt-6 text-center">
+        <div className="mt-8 text-center">
           <button
             onClick={recarregarDashboard}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />

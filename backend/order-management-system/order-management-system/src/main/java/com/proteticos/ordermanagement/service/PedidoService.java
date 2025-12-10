@@ -10,8 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,9 +28,8 @@ public class PedidoService {
     @Autowired
     private EtapaPedidoRepository etapaPedidoRepository;
 
-    // ============ NOVO MÉTODO: Converter Pedido para DTO ============
-// NO PedidoService.java - ATUALIZE O MÉTODO converterParaDTO
-// NO PedidoService.java - ATUALIZE A PARTE DO PROTÉTICO NO MÉTODO converterParaDTO
+    // ============ MÉTODOS DE CONVERSÃO PARA DTO ============
+
     public PedidoResponseDTO converterParaDTO(Pedido pedido) {
         if (pedido == null) {
             return null;
@@ -49,36 +47,40 @@ public class PedidoService {
         dto.setStatus(pedido.getStatus());
         dto.setDataCriacao(pedido.getDataCriacao());
 
-        // Converter dentista - USANDO APENAS CAMPOS QUE EXISTEM
+        // Converter dentista
         if (pedido.getDentista() != null) {
             DentistaSimplesDTO dentistaDTO = new DentistaSimplesDTO();
             dentistaDTO.setId(pedido.getDentista().getId());
             dentistaDTO.setNome(pedido.getDentista().getNome());
             dentistaDTO.setEmail(pedido.getDentista().getEmail());
             dentistaDTO.setCro(pedido.getDentista().getCro());
-            // REMOVER: dentistaDTO.setEspecialidade(...); ← Não existe
             dto.setDentista(dentistaDTO);
         }
 
-        // Converter protético - USANDO APENAS CAMPOS QUE EXISTEM
+        // Converter protético
         if (pedido.getProtetico() != null) {
             ProteticoSimplesDTO proteticoDTO = new ProteticoSimplesDTO();
             proteticoDTO.setId(pedido.getProtetico().getId());
             proteticoDTO.setNome(pedido.getProtetico().getNome());
             proteticoDTO.setEmail(pedido.getProtetico().getEmail());
-
-            // REMOVER todos os outros setters que não existem
             dto.setProtetico(proteticoDTO);
         }
 
         return dto;
     }
+
+    // MÉTODO FALTANTE - ADICIONE ESTE
     public List<PedidoResponseDTO> converterListaParaDTO(List<Pedido> pedidos) {
+        if (pedidos == null || pedidos.isEmpty()) {
+            return new ArrayList<>();
+        }
+
         return pedidos.stream()
                 .map(this::converterParaDTO)
                 .collect(Collectors.toList());
     }
-    // ============ FIM DO NOVO MÉTODO ============
+
+    // ============ MÉTODOS DE CRIAÇÃO ============
 
     @Transactional
     public Pedido criarPedido(CriarPedidoRequest request) {
@@ -96,19 +98,9 @@ public class PedidoService {
         pedido.setTipoServico(request.getTipoServico());
         pedido.setInformacoesDetalhadas(request.getInformacoesDetalhadas());
         pedido.setValorCobrado(request.getValorCobrado());
-
-        // Datas
-        if (request.getDataEntrada() != null) {
-            pedido.setDataEntrada(request.getDataEntrada());
-        } else {
-            pedido.setDataEntrada(LocalDate.now());
-        }
-
+        pedido.setDataEntrada(LocalDate.now());
         pedido.setDataPrevistaEntrega(request.getDataPrevistaEntrega());
-
-        // Status inicial: AGUARDANDO_APROVACAO (quando dentista cria)
         pedido.setStatus(StatusPedido.AGUARDANDO_APROVACAO);
-
         pedido.setDataCriacao(LocalDateTime.now());
 
         // Salvar pedido
@@ -122,60 +114,99 @@ public class PedidoService {
         return pedidoSalvo;
     }
 
+    // ============ MÉTODOS DE STATUS (FLUXO CONTROLADO) ============
+
     @Transactional
     public Pedido aprovarPedido(Long pedidoId) {
-        try {
-            System.out.println("=== APROVANDO PEDIDO NO SERVICE ===");
-            System.out.println("Pedido ID: " + pedidoId);
-
-            // Busca o pedido
-            Pedido pedido = pedidoRepository.findById(pedidoId)
-                    .orElseThrow(() -> new RuntimeException("Pedido não encontrado com ID: " + pedidoId));
-
-            System.out.println("Status atual: " + pedido.getStatus());
-            System.out.println("Código: " + pedido.getCodigo());
-
-            // Verifica se pode ser aprovado
-            if (pedido.getStatus() != StatusPedido.AGUARDANDO_APROVACAO) {
-                System.err.println("❌ Pedido não está aguardando aprovação. Status: " + pedido.getStatus());
-                throw new RuntimeException("Pedido não está aguardando aprovação. Status atual: " + pedido.getStatus());
-            }
-
-            // Muda para APROVADO
-            pedido.setStatus(StatusPedido.APROVADO);
-            System.out.println("✅ Mudando status para: APROVADO");
-
-            // Salva as alterações
-            Pedido pedidoAprovado = pedidoRepository.save(pedido);
-
-            System.out.println("✅ Pedido aprovado com sucesso! Novo status: " + pedidoAprovado.getStatus());
-            return pedidoAprovado;
-
-        } catch (Exception e) {
-            System.err.println("💥 Erro no service ao aprovar pedido: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
-        }
+        return mudarStatus(pedidoId, StatusPedido.APROVADO);
     }
 
-    private void criarEtapasIniciais(Pedido pedido) {
-        // Etapa 1: Recebimento
-        EtapaPedido etapa1 = new EtapaPedido();
-        etapa1.setPedido(pedido);
-        etapa1.setNomeEtapa("Recebimento");
-        etapa1.setObservacoes("Pedido recebido do dentista");
-        etapa1.setStatus(StatusEtapa.PENDENTE);
-        etapa1.setOrdem(1);
-        etapaPedidoRepository.save(etapa1);
+    @Transactional
+    public Pedido iniciarProducao(Long pedidoId) {
+        return mudarStatus(pedidoId, StatusPedido.EM_PRODUCAO);
+    }
 
-        // Etapa 2: Planejamento
+    @Transactional
+    public Pedido finalizarPedido(Long pedidoId) {
+        Pedido pedido = mudarStatus(pedidoId, StatusPedido.FINALIZADO);
+
+        // Define data de conclusão
+        pedido.setDataEntrega(LocalDate.now());
+        pedido.setDataUltimaAtualizacao(LocalDateTime.now());
+
+        return pedidoRepository.save(pedido);
+    }
+
+    @Transactional
+    public Pedido cancelarPedido(Long pedidoId) {
+        Pedido pedido = mudarStatus(pedidoId, StatusPedido.CANCELADO);
+
+        // Define data de cancelamento
+        pedido.setDataCancelamento(LocalDate.now());
+        pedido.setDataUltimaAtualizacao(LocalDateTime.now());
+
+        return pedidoRepository.save(pedido);
+    }
+
+    // ============ MÉTODO PRIVADO PARA MUDANÇA DE STATUS ============
+
+    @Transactional
+    private Pedido mudarStatus(Long pedidoId, StatusPedido novoStatus) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new RuntimeException("Pedido não encontrado com ID: " + pedidoId));
+
+        // Valida se pode fazer a transição
+        if (!pedido.getStatus().podeMudarPara(novoStatus)) {
+            throw new RuntimeException(
+                    "Não é possível mudar de " + pedido.getStatus() + " para " + novoStatus +
+                            ". Transição não permitida."
+            );
+        }
+
+        System.out.println("✅ Mudando pedido " + pedidoId +
+                " de " + pedido.getStatus() + " para " + novoStatus);
+
+        pedido.setStatus(novoStatus);
+        pedido.setDataUltimaAtualizacao(LocalDateTime.now());
+
+        return pedidoRepository.save(pedido);
+    }
+
+    // ============ MÉTODO GENÉRICO PARA ATUALIZAÇÃO DE STATUS ============
+
+    @Transactional
+    public Pedido atualizarStatus(Long pedidoId, StatusPedido novoStatus) {
+        return mudarStatus(pedidoId, novoStatus);
+    }
+
+    // ============ MÉTODOS AUXILIARES ============
+
+    public List<StatusPedido> getProximosStatusPossiveis(Long pedidoId) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new RuntimeException("Pedido não encontrado com ID: " + pedidoId));
+
+        // Usa o método getProximosStatus() que você adicionou no enum
+        return Arrays.asList(pedido.getStatus().getProximosStatus());
+    }
+
+    // ============ OUTROS MÉTODOS ============
+
+    private void criarEtapasIniciais(Pedido pedido) {
+        // Usando o método factory (opção 1)
+        EtapaPedido etapa1 = EtapaPedido.criarEtapaInicial(
+                pedido, "Recebimento", "Pedido recebido do dentista", 1
+        );
+        etapaPedidoRepository.save(etapa1); // @PrePersist será chamado aqui!
+
+        // Ou usando construtor normal (opção 2)
         EtapaPedido etapa2 = new EtapaPedido();
         etapa2.setPedido(pedido);
         etapa2.setNomeEtapa("Planejamento");
         etapa2.setObservacoes("Planejamento do trabalho protético");
         etapa2.setStatus(StatusEtapa.PENDENTE);
         etapa2.setOrdem(2);
-        etapaPedidoRepository.save(etapa2);
+        // NÃO precisa mais: etapa2.setDataCriacao(LocalDateTime.now());
+        etapaPedidoRepository.save(etapa2); // @PrePersist será chamado aqui!
     }
 
     public List<Pedido> listarTodosPedidos() {
@@ -200,34 +231,17 @@ public class PedidoService {
     }
 
     @Transactional
-    public Pedido atualizarStatus(Long pedidoId, StatusPedido novoStatus) {
-        Pedido pedido = pedidoRepository.findById(pedidoId)
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado com ID: " + pedidoId));
-
-        System.out.println("Atualizando pedido " + pedidoId + " de " + pedido.getStatus() + " para " + novoStatus);
-
-        pedido.setStatus(novoStatus);
-
-        // Se for marcado como ENTREGUE, definir data de entrega
-        if (novoStatus == StatusPedido.ENTREGUE && pedido.getDataEntrega() == null) {
-            pedido.setDataEntrega(LocalDate.now());
-        }
-
-        // Se for FINALIZADO/CONCLUIDO e não tiver data de entrega
-        if ((novoStatus == StatusPedido.FINALIZADO || novoStatus == StatusPedido.CONCLUIDO)
-                && pedido.getDataEntrega() == null) {
-            pedido.setDataEntrega(LocalDate.now());
-        }
-
-        return pedidoRepository.save(pedido);
-    }
-
-    @Transactional
     public Pedido atualizarValor(Long pedidoId, BigDecimal novoValor) {
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RuntimeException("Pedido não encontrado com ID: " + pedidoId));
 
+        // Só permite editar se não estiver finalizado
+        if (pedido.getStatus().isEstadoFinal()) {
+            throw new RuntimeException("Não é possível editar um pedido finalizado ou cancelado");
+        }
+
         pedido.setValorCobrado(novoValor);
+        pedido.setDataUltimaAtualizacao(LocalDateTime.now());
         return pedidoRepository.save(pedido);
     }
 
@@ -236,7 +250,13 @@ public class PedidoService {
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RuntimeException("Pedido não encontrado com ID: " + pedidoId));
 
+        // Só permite editar se não estiver finalizado
+        if (pedido.getStatus().isEstadoFinal()) {
+            throw new RuntimeException("Não é possível editar um pedido finalizado ou cancelado");
+        }
+
         pedido.setDataPrevistaEntrega(novaDataPrevista);
+        pedido.setDataUltimaAtualizacao(LocalDateTime.now());
         return pedidoRepository.save(pedido);
     }
 
@@ -248,23 +268,12 @@ public class PedidoService {
         pedidoRepository.deleteById(pedidoId);
     }
 
-    @Transactional
-    public Pedido finalizarPedido(Long pedidoId) {
-        Pedido pedido = pedidoRepository.findById(pedidoId)
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado com ID: " + pedidoId));
-
-        pedido.setStatus(StatusPedido.CONCLUIDO);
-        pedido.setDataEntrega(LocalDate.now());
-
-        return pedidoRepository.save(pedido);
-    }
-
     public List<Pedido> buscarPorStatus(StatusPedido status) {
         return pedidoRepository.findByStatus(status);
     }
 
     public List<Pedido> buscarAtrasados() {
         LocalDate hoje = LocalDate.now();
-        return pedidoRepository.findByDataPrevistaEntregaBeforeAndStatusNot(hoje, StatusPedido.ENTREGUE);
+        return pedidoRepository.findByDataPrevistaEntregaBeforeAndStatusNot(hoje, StatusPedido.FINALIZADO);
     }
 }

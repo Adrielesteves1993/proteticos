@@ -39,16 +39,18 @@ public class Pedido {
     private LocalDate dataEntrada;
     private LocalDate dataPrevistaEntrega;
     private LocalDate dataEntrega;
+    private LocalDate dataCancelamento; // ← ADICIONADO
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, columnDefinition = "VARCHAR(50)")
-    private StatusPedido status = StatusPedido.RASCUNHO;
+    private StatusPedido status = StatusPedido.AGUARDANDO_APROVACAO; // ← MUDADO para AGUARDANDO_APROVACAO
 
     private LocalDateTime dataCriacao = LocalDateTime.now();
+    private LocalDateTime dataUltimaAtualizacao; // ← ADICIONADO
 
     // RELACIONAMENTO COM ETAPAS - DENTRO DA CLASSE!
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnoreProperties("pedido") // ← MUDANÇA AQUI: Troquei @JsonManagedReference por @JsonIgnoreProperties
+    @JsonIgnoreProperties("pedido")
     private List<EtapaPedido> etapas = new ArrayList<>();
 
     // Construtor padrão
@@ -64,13 +66,15 @@ public class Pedido {
 
     // Gerar código automaticamente antes de salvar
     @PrePersist
-    public void gerarCodigo() {
+    @PreUpdate
+    public void gerarCodigoEAtualizar() {
         if (this.codigo == null) {
             this.codigo = "P" + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         }
         if (this.dataEntrada == null) {
             this.dataEntrada = LocalDate.now();
         }
+        this.dataUltimaAtualizacao = LocalDateTime.now(); // ← Atualiza sempre
     }
 
     // GETTERS E SETTERS
@@ -104,12 +108,23 @@ public class Pedido {
     public LocalDate getDataEntrega() { return dataEntrega; }
     public void setDataEntrega(LocalDate dataEntrega) { this.dataEntrega = dataEntrega; }
 
+    public LocalDate getDataCancelamento() { return dataCancelamento; } // ← ADICIONADO
+    public void setDataCancelamento(LocalDate dataCancelamento) { this.dataCancelamento = dataCancelamento; } // ← ADICIONADO
+
     public StatusPedido getStatus() { return status; }
     public void setStatus(StatusPedido status) { this.status = status; }
 
     public LocalDateTime getDataCriacao() { return dataCriacao; }
     public void setDataCriacao(LocalDateTime dataCriacao) { this.dataCriacao = dataCriacao; }
 
+    public LocalDateTime getDataUltimaAtualizacao() { return dataUltimaAtualizacao; } // ← ADICIONADO
+    public void setDataUltimaAtualizacao(LocalDateTime dataUltimaAtualizacao) { this.dataUltimaAtualizacao = dataUltimaAtualizacao; } // ← ADICIONADO
+
     public List<EtapaPedido> getEtapas() { return etapas; }
     public void setEtapas(List<EtapaPedido> etapas) { this.etapas = etapas; }
+
+    // MÉTODO AUXILIAR: Verificar se pedido está ativo
+    public boolean isAtivo() {
+        return this.status != StatusPedido.FINALIZADO && this.status != StatusPedido.CANCELADO;
+    }
 }

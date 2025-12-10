@@ -48,7 +48,22 @@ public class EtapaPedido {
     @Column(name = "data_prevista")
     private LocalDate dataPrevista;
 
-    // Construtores
+    // ============ MÉTODOS DE CALLBACK ============
+
+    @PrePersist
+    protected void prePersist() {
+        if (dataCriacao == null) {
+            dataCriacao = LocalDateTime.now();
+        }
+    }
+
+    @PreUpdate
+    protected void preUpdate() {
+        dataAtualizacao = LocalDateTime.now();
+    }
+
+    // ============ CONSTRUTORES ============
+
     public EtapaPedido() {
     }
 
@@ -60,12 +75,27 @@ public class EtapaPedido {
         this.observacoes = observacoes;
         this.status = status;
         this.ordem = ordem;
-        this.dataCriacao = dataCriacao;
+        this.dataCriacao = dataCriacao != null ? dataCriacao : LocalDateTime.now();
         this.responsavel = responsavel;
         this.dataPrevista = dataPrevista;
     }
 
-    // MÉTODOS DE AÇÃO - ADICIONE ESTA SEÇÃO
+    // Construtor simplificado sem dataCriacao - usa a atual automaticamente
+    public EtapaPedido(Pedido pedido, String nomeEtapa, String observacoes,
+                       StatusEtapa status, int ordem, Protetico responsavel,
+                       LocalDate dataPrevista) {
+        this.pedido = pedido;
+        this.nomeEtapa = nomeEtapa;
+        this.observacoes = observacoes;
+        this.status = status;
+        this.ordem = ordem;
+        this.dataCriacao = LocalDateTime.now(); // Define automaticamente
+        this.responsavel = responsavel;
+        this.dataPrevista = dataPrevista;
+    }
+
+    // ============ MÉTODOS DE AÇÃO ============
+
     public void concluir() {
         this.status = StatusEtapa.CONCLUIDA;
         this.dataConclusao = LocalDateTime.now();
@@ -110,7 +140,7 @@ public class EtapaPedido {
         return StatusEtapa.CANCELADA.equals(this.status);
     }
 
-    // TODOS OS GETTERS E SETTERS NECESSÁRIOS
+    // ============ GETTERS E SETTERS ============
 
     public Long getId() {
         return id;
@@ -150,6 +180,8 @@ public class EtapaPedido {
 
     public void setStatus(StatusEtapa status) {
         this.status = status;
+        // Atualiza dataAtualizacao quando muda o status
+        this.dataAtualizacao = LocalDateTime.now();
     }
 
     public int getOrdem() {
@@ -182,6 +214,8 @@ public class EtapaPedido {
 
     public void setResponsavel(Protetico responsavel) {
         this.responsavel = responsavel;
+        // Atualiza dataAtualizacao quando muda o responsável
+        this.dataAtualizacao = LocalDateTime.now();
     }
 
     public LocalDateTime getPrazoEstimado() {
@@ -208,6 +242,21 @@ public class EtapaPedido {
         this.dataPrevista = dataPrevista;
     }
 
+    // ============ MÉTODOS ADICIONAIS ============
+
+    // Método factory para criar etapas iniciais
+    public static EtapaPedido criarEtapaInicial(Pedido pedido, String nomeEtapa,
+                                                String observacoes, int ordem) {
+        EtapaPedido etapa = new EtapaPedido();
+        etapa.setPedido(pedido);
+        etapa.setNomeEtapa(nomeEtapa);
+        etapa.setObservacoes(observacoes);
+        etapa.setStatus(StatusEtapa.PENDENTE);
+        etapa.setOrdem(ordem);
+        // dataCriacao será automaticamente definida no @PrePersist
+        return etapa;
+    }
+
     // toString para debug
     @Override
     public String toString() {
@@ -217,13 +266,14 @@ public class EtapaPedido {
                 ", nomeEtapa='" + nomeEtapa + '\'' +
                 ", status=" + status +
                 ", ordem=" + ordem +
+                ", dataCriacao=" + dataCriacao +
                 ", dataPrevista=" + dataPrevista +
                 ", responsavel=" + (responsavel != null ? responsavel.getNome() : "null") +
                 ", concluida=" + isConcluida() +
                 '}';
     }
 
-    // Métodos equals e hashCode (opcional mas recomendado)
+    // Métodos equals e hashCode
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

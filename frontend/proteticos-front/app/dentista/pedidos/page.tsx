@@ -41,9 +41,9 @@ export default function PedidosDentista() {
     console.log('👤 Dentista logado - ID:', usuario.id, 'Nome:', usuario.nome)
     
     // 2. Usa o NOVO endpoint otimizado
-    console.log(`🔄 Chamando: http://localhost:8080/api/pedidos/para-frontend/${usuario.id}`)
+    console.log(`🔄 Chamando: http://localhost:8080/api/pedidos/dentista/${usuario.id}`)
     
-    const response = await fetch(`http://localhost:8080/api/pedidos/para-frontend/${usuario.id}`)
+    const response = await fetch(`http://localhost:8080/api/pedidos/dentista/${usuario.id}`)
     
     if (!response.ok) {
       const errorText = await response.text()

@@ -212,13 +212,12 @@ export default function PedidosProtetico() {
           <div className="flex flex-wrap gap-2">
             {[
               'TODOS', 
-              'RASCUNHO', 
-              'AGUARDANDO_APROVACAO', 
-              'APROVADO',
-              'EM_PRODUCAO', 
-              'FINALIZADO',
-              'ENTREGUE',
-              'CANCELADO'
+              'AGUARDANDO_APROVACAO',  // Mantém
+              'APROVADO',              // Mantém
+              'EM_PRODUCAO',           // Mantém
+              'FINALIZADO',            // Mantém (substitui ENTREGUE)
+              'CANCELADO'              // Mantém
+              // Remove: RASCUNHO, ENTREGUE
             ].map((filtroItem) => (
               <button
                 key={filtroItem}

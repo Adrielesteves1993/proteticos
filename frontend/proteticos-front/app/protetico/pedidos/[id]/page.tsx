@@ -1,4 +1,4 @@
-// app/protetico/pedidos/[id]/page.tsx
+// app/protetico/pedidos/[id]/page.tsx - VERSÃO CORRIGIDA
 "use client"
 
 import { useEffect, useState } from 'react'
@@ -105,12 +105,12 @@ export default function DetalhesPedidoProtetico() {
       const pedidoData = await response.json()
       console.log('✅ Pedido carregado:', pedidoData)
       
-      // Formata pedido
+      // Formata pedido - ALTERADO: Status inicial não é mais RASCUNHO
       const pedidoFormatado: Pedido = {
         id: pedidoData.id,
         codigo: pedidoData.codigo || `P${pedidoData.id}`,
         tipoServico: pedidoData.tipoServico || 'Não especificado',
-        status: pedidoData.status || 'RASCUNHO',
+        status: pedidoData.status || 'AGUARDANDO_APROVACAO', // ALTERADO
         dataEntrada: pedidoData.dataEntrada || pedidoData.dataCriacao?.split('T')[0] || new Date().toISOString().split('T')[0],
         dataPrevistaEntrega: pedidoData.dataPrevistaEntrega || pedidoData.dataPrevista || '',
         dataEntrega: pedidoData.dataEntrega,
@@ -178,29 +178,13 @@ export default function DetalhesPedidoProtetico() {
     }
   }
 
+  // ALTERADO: Função de aprovação simplificada
   const handleAprovarPedido = async () => {
     try {
       setSalvando(true)
       
-      // Primeiro muda para AGUARDANDO_APROVACAO
-      if (pedido?.status !== 'AGUARDANDO_APROVACAO') {
-        console.log('🔄 Mudando status para AGUARDANDO_APROVACAO...')
-        const statusResponse = await fetch(`http://localhost:8080/api/pedidos/${id}/status?status=AGUARDANDO_APROVACAO`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        })
-        
-        if (!statusResponse.ok) {
-          throw new Error('Erro ao mudar status para AGUARDANDO_APROVACAO')
-        }
-      }
-      
-      // Depois aprova
       console.log('✅ Aprovando pedido...')
-      const aprovarResponse = await fetch(`http://localhost:8080/api/pedidos/${id}/aprovar`, {
+      const response = await fetch(`http://localhost:8080/api/pedidos/${id}/aprovar`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -208,11 +192,9 @@ export default function DetalhesPedidoProtetico() {
         }
       })
       
-      const data = await aprovarResponse.json()
-      console.log('📥 Resposta:', data)
-      
-      if (!aprovarResponse.ok) {
-        throw new Error(data.message || 'Erro ao aprovar pedido')
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.message || data.error || 'Erro ao aprovar pedido')
       }
       
       // Atualiza localmente
@@ -229,6 +211,122 @@ export default function DetalhesPedidoProtetico() {
     } catch (error: any) {
       console.error('❌ Erro:', error)
       alert('❌ Erro ao aprovar pedido: ' + error.message)
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  // NOVO: Função para iniciar produção
+  const handleIniciarProducao = async () => {
+    try {
+      setSalvando(true)
+      
+      console.log('🔧 Iniciando produção...')
+      const response = await fetch(`http://localhost:8080/api/pedidos/${id}/iniciar-producao`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.message || data.error || 'Erro ao iniciar produção')
+      }
+      
+      // Atualiza localmente
+      if (pedido) {
+        setPedido({
+          ...pedido,
+          status: 'EM_PRODUCAO'
+        })
+      }
+      
+      alert('✅ Produção iniciada com sucesso!')
+      
+    } catch (error: any) {
+      console.error('❌ Erro:', error)
+      alert('❌ Erro ao iniciar produção: ' + error.message)
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  // ALTERADO: Usa endpoint específico para finalizar
+  const handleFinalizarPedido = async () => {
+    if (!window.confirm('Tem certeza que deseja finalizar este pedido?')) return
+    
+    try {
+      setSalvando(true)
+      
+      console.log('🏁 Finalizando pedido...')
+      const response = await fetch(`http://localhost:8080/api/pedidos/${id}/finalizar`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.message || data.error || 'Erro ao finalizar pedido')
+      }
+      
+      // Atualiza localmente
+      if (pedido) {
+        setPedido({
+          ...pedido,
+          status: 'FINALIZADO',
+          dataEntrega: new Date().toISOString().split('T')[0]
+        })
+      }
+      
+      alert('✅ Pedido finalizado com sucesso!')
+      
+    } catch (error: any) {
+      console.error('❌ Erro ao finalizar pedido:', error)
+      alert('❌ Erro ao finalizar pedido: ' + error.message)
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  // NOVO: Função para cancelar pedido
+  const handleCancelarPedido = async () => {
+    if (!window.confirm('Tem certeza que deseja cancelar este pedido?')) return
+    
+    try {
+      setSalvando(true)
+      
+      console.log('❌ Cancelando pedido...')
+      const response = await fetch(`http://localhost:8080/api/pedidos/${id}/cancelar`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.message || data.error || 'Erro ao cancelar pedido')
+      }
+      
+      // Atualiza localmente
+      if (pedido) {
+        setPedido({
+          ...pedido,
+          status: 'CANCELADO'
+        })
+      }
+      
+      alert('✅ Pedido cancelado com sucesso!')
+      
+    } catch (error: any) {
+      console.error('❌ Erro ao cancelar pedido:', error)
+      alert('❌ Erro ao cancelar pedido: ' + error.message)
     } finally {
       setSalvando(false)
     }
@@ -262,8 +360,8 @@ export default function DetalhesPedidoProtetico() {
         setPedido({
           ...pedido,
           status: novoStatus,
-          // Se for status final, atualiza data de entrega
-          ...(novoStatus === 'FINALIZADO' || novoStatus === 'ENTREGUE' || novoStatus === 'CONCLUIDO' ? {
+          // Se for finalizado, atualiza data de entrega
+          ...(novoStatus === 'FINALIZADO' ? {
             dataEntrega: new Date().toISOString().split('T')[0]
           } : {})
         })
@@ -464,48 +562,6 @@ export default function DetalhesPedidoProtetico() {
     }
   }
 
-  const handleFinalizarPedido = async () => {
-    if (!window.confirm('Tem certeza que deseja finalizar este pedido?')) return
-    
-    try {
-      setSalvando(true)
-      
-      console.log('🏁 Finalizando pedido...')
-      
-      const response = await fetch(`http://localhost:8080/api/pedidos/${id}/status?status=FINALIZADO`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      })
-      
-      const data = await response.json()
-      console.log('📥 Resposta:', data)
-      
-      if (!response.ok) {
-        throw new Error(data.error || `Erro ${response.status}`)
-      }
-      
-      // Atualiza localmente
-      if (pedido) {
-        setPedido({
-          ...pedido,
-          status: 'FINALIZADO',
-          dataEntrega: new Date().toISOString().split('T')[0]
-        })
-      }
-      
-      alert('✅ Pedido finalizado com sucesso!')
-      
-    } catch (error: any) {
-      console.error('❌ Erro ao finalizar pedido:', error)
-      alert('❌ Erro ao finalizar pedido: ' + error.message)
-    } finally {
-      setSalvando(false)
-    }
-  }
-
   const formatarData = (dataString: string) => {
     if (!dataString) return 'Não definida'
     try {
@@ -530,15 +586,13 @@ export default function DetalhesPedidoProtetico() {
       .replace(/\b\w/g, l => l.toUpperCase())
   }
 
+  // ALTERADO: Remove RASCUNHO, PRODUCAO e ENTREGUE
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'RASCUNHO': return 'bg-gray-100 text-gray-800'
       case 'AGUARDANDO_APROVACAO': return 'bg-yellow-100 text-yellow-800'
       case 'APROVADO': return 'bg-blue-100 text-blue-800'
       case 'EM_PRODUCAO': return 'bg-purple-100 text-purple-800'
-      case 'PRODUCAO': return 'bg-purple-100 text-purple-800'
       case 'FINALIZADO': return 'bg-green-100 text-green-800'
-      case 'ENTREGUE': return 'bg-green-100 text-green-800'
       case 'CANCELADO': return 'bg-red-100 text-red-800'
       default: return 'bg-gray-100 text-gray-800'
     }
@@ -676,73 +730,12 @@ export default function DetalhesPedidoProtetico() {
                   </p>
                 </div>
               </div>
-            </div>
-
-            {/* Card Etapas do Pedido */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">🔄 Etapas do Processo</h2>
-                <button
-                  onClick={() => setShowEtapaModal(true)}
-                  className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                >
-                  + Nova Etapa
-                </button>
-              </div>
-              
-              {etapas.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">Nenhuma etapa cadastrada para este pedido.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {etapas.map((etapa) => (
-                    <div key={etapa.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h3 className="font-medium text-gray-900">{etapa.nomeEtapa}</h3>
-                          <p className="text-sm text-gray-600 mt-1">{etapa.observacoes}</p>
-                        </div>
-                        <span className={`px-2 py-1 text-xs rounded-full ${getStatusEtapaColor(etapa.status)}`}>
-                          {etapa.status.replace(/_/g, ' ')}
-                        </span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center mt-4">
-                        <div className="text-xs text-gray-500">
-                          {etapa.dataCriacao && `Criação: ${formatarData(etapa.dataCriacao)}`}
-                          {etapa.dataConclusao && ` • Conclusão: ${formatarData(etapa.dataConclusao)}`}
-                        </div>
-                        
-                        <div className="flex space-x-2">
-                          {etapa.status !== 'CONCLUIDA' && (
-                            <button
-                              onClick={() => handleAtualizarEtapa(etapa.id, 'CONCLUIDA')}
-                              className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200"
-                            >
-                              Concluir
-                            </button>
-                          )}
-                          {etapa.status !== 'EM_ANDAMENTO' && etapa.status !== 'CONCLUIDA' && (
-                            <button
-                              onClick={() => handleAtualizarEtapa(etapa.id, 'EM_ANDAMENTO')}
-                              className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
-                            >
-                              Iniciar
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            </div>       
           </div>
 
           {/* Coluna 2: Ações e Informações */}
           <div className="space-y-6">
-            {/* Card Ações Rápidas */}
+            {/* Card Ações Rápidas - ALTERADO: Novo layout */}
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">⚡ Ações Rápidas</h2>
               
@@ -756,12 +749,23 @@ export default function DetalhesPedidoProtetico() {
                   </button>
                 )}
                 
-                <button
-                  onClick={() => setShowStatusModal(true)}
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  🔄 Alterar Status
-                </button>
+                {pedido.status === 'APROVADO' && (
+                  <button
+                    onClick={handleIniciarProducao}
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    🔧 Iniciar Produção
+                  </button>
+                )}
+                
+                {pedido.status === 'EM_PRODUCAO' && (
+                  <button
+                    onClick={handleFinalizarPedido}
+                    className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    🏁 Finalizar Pedido
+                  </button>
+                )}
                 
                 <button
                   onClick={() => setShowValorModal(true)}
@@ -777,12 +781,13 @@ export default function DetalhesPedidoProtetico() {
                   📅 Alterar Prazo
                 </button>
                 
-                {pedido.status !== 'FINALIZADO' && pedido.status !== 'ENTREGUE' && (
+                {/* Botão de cancelamento - disponível para pedidos não finalizados */}
+                {pedido.status !== 'FINALIZADO' && pedido.status !== 'CANCELADO' && (
                   <button
-                    onClick={handleFinalizarPedido}
-                    className="w-full bg-green-700 text-white py-2 px-4 rounded-lg hover:bg-green-800 transition-colors"
+                    onClick={handleCancelarPedido}
+                    className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
                   >
-                    🏁 Finalizar Pedido
+                    ❌ Cancelar Pedido
                   </button>
                 )}
               </div>
@@ -868,7 +873,7 @@ export default function DetalhesPedidoProtetico() {
         </div>
       )}
 
-      {/* Modal de Status */}
+      {/* Modal de Status - ALTERADO: Remove RASCUNHO e ENTREGUE */}
       {showStatusModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full">
@@ -883,12 +888,10 @@ export default function DetalhesPedidoProtetico() {
                 onChange={(e) => setNovoStatus(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2"
               >
-                <option value="RASCUNHO">Rascunho</option>
                 <option value="AGUARDANDO_APROVACAO">Aguardando Aprovação</option>
                 <option value="APROVADO">Aprovado</option>
                 <option value="EM_PRODUCAO">Em Produção</option>
                 <option value="FINALIZADO">Finalizado</option>
-                <option value="ENTREGUE">Entregue</option>
                 <option value="CANCELADO">Cancelado</option>
               </select>
             </div>

@@ -1,31 +1,68 @@
-// StatusPedido.java
 package com.proteticos.ordermanagement.model;
 
 public enum StatusPedido {
-    RASCUNHO,              // Quando dentista está criando
-    AGUARDANDO_APROVACAO,  // Quando dentista finalizou e enviou para protético
+    // Estado inicial quando dentista cria
+    AGUARDANDO_APROVACAO,  // Quando dentista criou e enviou para protético
     APROVADO,              // Quando protético aprovou
     EM_PRODUCAO,           // Quando protético começou a produzir
-    AGUARDANDO_MATERIAL,   // Esperando material chegar
-    TERCEIRIZADO,          // Trabalho terceirizado
-    PRONTO_ENTREGA,        // Pronto para entregar
-    ENTREGUE,              // Foi entregue ao dentista
-    FINALIZADO,            // Sinônimo de ENTREGUE
-    CONCLUIDO,             // Outro sinônimo
-    CANCELADO;             // Cancelado
+    FINALIZADO,            // Trabalho concluído (pronto para entrega)
+    CANCELADO;             // Cancelado (pode acontecer em qualquer momento)
 
-    // Método para verificar se está em aprovação
-    public boolean isAguardandoAprovacao() {
-        return this == AGUARDANDO_APROVACAO;
+    // VALIDAÇÃO DE TRANSIÇÕES - NÃO PERMITE VOLTAR ATRÁS
+    public boolean podeMudarPara(StatusPedido novoStatus) {
+        // Se for cancelar, sempre pode (exceto se já estiver cancelado ou finalizado)
+        if (novoStatus == CANCELADO) {
+            return this != CANCELADO && this != FINALIZADO;
+        }
+
+        // Não pode mudar para estados já finalizados
+        if (this == FINALIZADO || this == CANCELADO) {
+            return false;
+        }
+
+        // Fluxo normal (sequencial, não pode retroceder)
+        switch (this) {
+            case AGUARDANDO_APROVACAO:
+                return novoStatus == APROVADO || novoStatus == CANCELADO;
+            case APROVADO:
+                return novoStatus == EM_PRODUCAO || novoStatus == CANCELADO;
+            case EM_PRODUCAO:
+                return novoStatus == FINALIZADO || novoStatus == CANCELADO;
+            case FINALIZADO:
+                return false; // Estado final
+            case CANCELADO:
+                return false; // Estado final
+            default:
+                return false;
+        }
     }
 
-    // Método para verificar se está em produção
-    public boolean isEmProducao() {
-        return this == EM_PRODUCAO || this == APROVADO;
+    // Verifica se o status permite edição
+    public boolean permiteEdicao() {
+        return this == AGUARDANDO_APROVACAO || this == APROVADO;
     }
 
-    // Método para verificar se está finalizado
-    public boolean isFinalizado() {
-        return this == ENTREGUE || this == FINALIZADO || this == CONCLUIDO;
+    // Verifica se está em um estado final
+    public boolean isEstadoFinal() {
+        return this == FINALIZADO || this == CANCELADO;
+    }
+
+    // Obtém próximos status possíveis
+    public StatusPedido[] getProximosStatus() {
+        switch (this) {
+            case AGUARDANDO_APROVACAO:
+                return new StatusPedido[]{APROVADO, CANCELADO};
+            case APROVADO:
+                return new StatusPedido[]{EM_PRODUCAO, CANCELADO};
+            case EM_PRODUCAO:
+                return new StatusPedido[]{FINALIZADO, CANCELADO};
+            default:
+                return new StatusPedido[]{};
+        }
+    }
+
+    // Verifica se é um status "ativo" (não finalizado)
+    public boolean isAtivo() {
+        return this != FINALIZADO && this != CANCELADO;
     }
 }
