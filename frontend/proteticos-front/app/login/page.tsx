@@ -34,9 +34,9 @@ export default function Login() {
         localStorage.setItem('usuario', JSON.stringify(usuario))
         
         // Redireciona para o dashboard correto baseado no tipo
-        if (usuario.tipo === 'DENTISTA') {
+        if (usuario.tipo === 'dentista') {
           router.push('/dentista/dashboard')
-        } else if (usuario.tipo === 'PROTETICO') {
+        } else if (usuario.tipo === 'protetico') {
           router.push('/protetico/dashboard')
         } else {
           router.push('/dashboard')

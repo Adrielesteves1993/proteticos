@@ -1,4 +1,4 @@
-// app/protetico/pedidos/page.tsx - VERSÃO SEM MOCK
+// app/protetico/pedidos/page.tsx - VERSÃO CORRIGIDA
 "use client"
 
 import { useEffect, useState } from 'react'
@@ -43,10 +43,15 @@ export default function PedidosProtetico() {
       
       const usuario = JSON.parse(usuarioJSON)
       console.log('🔍 Protético logado - ID:', usuario.id, 'Nome:', usuario.nome)
+      console.log('🎯 Tipo do usuário (original):', usuario.tipo)
       
-      // 2. Verifica se é protético
-      if (usuario.tipo !== 'PROTETICO') {
+      // 2. VERIFICAÇÃO CORRIGIDA: Normaliza para maiúsculas antes de comparar
+      const tipoUsuario = String(usuario.tipo || '').toUpperCase()
+      console.log('🎯 Tipo normalizado:', tipoUsuario)
+      
+      if (!tipoUsuario.includes('PROTETICO')) {
         setErro('Apenas protéticos podem acessar esta página.')
+        console.warn('⚠️ Tipo de usuário não autorizado:', usuario.tipo)
         setCarregando(false)
         return
       }
@@ -207,17 +212,16 @@ export default function PedidosProtetico() {
           </div>
         )}
 
-        {/* Filtros - ATUALIZADO com APROVADO e ENTREGUE */}
+        {/* Filtros */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 mb-6">
           <div className="flex flex-wrap gap-2">
             {[
               'TODOS', 
-              'AGUARDANDO_APROVACAO',  // Mantém
-              'APROVADO',              // Mantém
-              'EM_PRODUCAO',           // Mantém
-              'FINALIZADO',            // Mantém (substitui ENTREGUE)
-              'CANCELADO'              // Mantém
-              // Remove: RASCUNHO, ENTREGUE
+              'AGUARDANDO_APROVACAO',
+              'APROVADO',
+              'EM_PRODUCAO',
+              'FINALIZADO',
+              'CANCELADO'
             ].map((filtroItem) => (
               <button
                 key={filtroItem}

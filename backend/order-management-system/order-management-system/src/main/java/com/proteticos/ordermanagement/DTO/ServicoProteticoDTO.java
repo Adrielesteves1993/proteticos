@@ -11,7 +11,8 @@ public class ServicoProteticoDTO {
     private String nomeServico;
     private BigDecimal preco;
     private String descricao;
-    private Integer tempoMedioHoras;
+    private Integer tempoMedioHoras; // Mantém para compatibilidade interna
+    private Integer tempoMedioDias;  // NOVO: campo para retornar ao frontend
     private boolean ativo;
     private LocalDateTime dataCriacao;
     private LocalDateTime dataAtualizacao;
@@ -48,8 +49,64 @@ public class ServicoProteticoDTO {
     public String getDescricao() { return descricao; }
     public void setDescricao(String descricao) { this.descricao = descricao; }
 
-    public Integer getTempoMedioHoras() { return tempoMedioHoras; }
-    public void setTempoMedioHoras(Integer tempoMedioHoras) { this.tempoMedioHoras = tempoMedioHoras; }
+    // GETTER/SETTER para horas (mantido para compatibilidade interna)
+    public Integer getTempoMedioHoras() {
+        return tempoMedioHoras;
+    }
+
+    public void setTempoMedioHoras(Integer tempoMedioHoras) {
+        this.tempoMedioHoras = tempoMedioHoras;
+        // Atualiza automaticamente os dias quando setar horas
+        if (tempoMedioHoras != null) {
+            this.tempoMedioDias = (int) Math.ceil(tempoMedioHoras / 24.0);
+        } else {
+            this.tempoMedioDias = null;
+        }
+    }
+
+    // GETTER/SETTER para dias (frontend usa este)
+    public Integer getTempoMedioDias() {
+        if (tempoMedioDias != null) {
+            return tempoMedioDias;
+        }
+        // Calcula dias a partir das horas se necessário
+        return tempoMedioHoras != null ? (int) Math.ceil(tempoMedioHoras / 24.0) : null;
+    }
+
+    public void setTempoMedioDias(Integer tempoMedioDias) {
+        this.tempoMedioDias = tempoMedioDias;
+        // Atualiza automaticamente as horas quando setar dias
+        if (tempoMedioDias != null) {
+            this.tempoMedioHoras = tempoMedioDias * 24;
+        } else {
+            this.tempoMedioHoras = null;
+        }
+    }
+
+    // Método helper para converter de entidade para DTO
+    public static ServicoProteticoDTO fromEntity(com.proteticos.ordermanagement.model.ServicoProtetico servico) {
+        ServicoProteticoDTO dto = new ServicoProteticoDTO();
+        dto.setId(servico.getId());
+        dto.setTipoServico(servico.getTipoServico());
+        dto.setPreco(servico.getPreco());
+        dto.setDescricao(servico.getDescricao());
+        dto.setAtivo(servico.isAtivo());
+        dto.setDataCriacao(servico.getDataCriacao());
+        dto.setDataAtualizacao(servico.getDataAtualizacao());
+
+        // Copia protético info
+        if (servico.getProtetico() != null) {
+            dto.setProteticoId(servico.getProtetico().getId());
+            dto.setProteticoNome(servico.getProtetico().getNome());
+        }
+
+        // Converte horas para dias
+        if (servico.getTempoMedioHoras() != null) {
+            dto.setTempoMedioHoras(servico.getTempoMedioHoras()); // Isso automaticamente seta os dias
+        }
+
+        return dto;
+    }
 
     public boolean isAtivo() { return ativo; }
     public void setAtivo(boolean ativo) { this.ativo = ativo; }

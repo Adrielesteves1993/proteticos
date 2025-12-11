@@ -34,6 +34,7 @@ public class ServicoProtetico {
     @Column(length = 500)
     private String descricao;
 
+    // MANTÉM horas no banco mas converte para dias via getter
     @Column(name = "tempo_medio_horas")
     private Integer tempoMedioHoras;
 
@@ -77,8 +78,35 @@ public class ServicoProtetico {
     public String getDescricao() { return descricao; }
     public void setDescricao(String descricao) { this.descricao = descricao; }
 
-    public Integer getTempoMedioHoras() { return tempoMedioHoras; }
-    public void setTempoMedioHoras(Integer tempoMedioHoras) { this.tempoMedioHoras = tempoMedioHoras; }
+    // MANTÉM horas no banco
+    public Integer getTempoMedioHoras() {
+        return tempoMedioHoras;
+    }
+
+    public void setTempoMedioHoras(Integer tempoMedioHoras) {
+        this.tempoMedioHoras = tempoMedioHoras;
+    }
+
+    // NOVO: Getter para dias (converte horas para dias)
+    @Transient // Não persiste no banco
+    public Integer getTempoMedioDias() {
+        if (tempoMedioHoras == null) {
+            return null;
+        }
+        // Converte horas para dias (arredonda para cima)
+        return (int) Math.ceil(tempoMedioHoras / 24.0);
+    }
+
+    // NOVO: Setter para dias (converte dias para horas)
+    @Transient // Não persiste no banco
+    public void setTempoMedioDias(Integer tempoMedioDias) {
+        if (tempoMedioDias == null) {
+            this.tempoMedioHoras = null;
+        } else {
+            // Converte dias para horas
+            this.tempoMedioHoras = tempoMedioDias * 24;
+        }
+    }
 
     public LocalDateTime getDataCriacao() { return dataCriacao; }
     public void setDataCriacao(LocalDateTime dataCriacao) { this.dataCriacao = dataCriacao; }

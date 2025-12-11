@@ -2,6 +2,7 @@ package com.proteticos.ordermanagement.controller;
 
 import com.proteticos.ordermanagement.DTO.ServicoProteticoDTO;
 import com.proteticos.ordermanagement.DTO.ServicoProteticoRequestDTO;
+import com.proteticos.ordermanagement.DTO.AtualizarServicoRequestDTO; // NOVO DTO
 import com.proteticos.ordermanagement.model.TipoServico;
 import com.proteticos.ordermanagement.service.ServicoProteticoService;
 import jakarta.validation.Valid;
@@ -60,6 +61,27 @@ public class ServicoProteticoController {
             return ResponseEntity.status(HttpStatus.CREATED).body(servico);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    // NOVO ENDPOINT para atualizar serviço completo
+    @PutMapping("/{tipoServico}")
+    public ResponseEntity<ServicoProteticoDTO> atualizarServico(
+            @PathVariable Long proteticoId,
+            @PathVariable String tipoServico,
+            @Valid @RequestBody AtualizarServicoRequestDTO requestDTO) {
+
+        TipoServico tipo = TipoServico.fromValue(tipoServico);
+        if (tipo == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        try {
+            ServicoProteticoDTO servico = servicoProteticoService
+                    .atualizarServico(proteticoId, tipo, requestDTO);
+            return ResponseEntity.ok(servico);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 

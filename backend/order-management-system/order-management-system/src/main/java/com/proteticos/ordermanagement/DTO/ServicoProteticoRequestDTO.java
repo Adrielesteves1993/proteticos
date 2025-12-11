@@ -1,4 +1,3 @@
-
 package com.proteticos.ordermanagement.DTO;
 
 import com.proteticos.ordermanagement.model.TipoServico;
@@ -18,23 +17,60 @@ public class ServicoProteticoRequestDTO {
     private String descricao;
 
     @Positive(message = "Tempo médio deve ser positivo")
-    private Integer tempoMedioHoras;
+    private Integer tempoMedioDias; // MUDOU: horas → dias
 
     private boolean ativo = true;
 
     // GETTERS E SETTERS
-    public TipoServico getTipoServico() { return tipoServico; }
-    public void setTipoServico(TipoServico tipoServico) { this.tipoServico = tipoServico; }
+    public TipoServico getTipoServico() {
+        return tipoServico;
+    }
 
-    public BigDecimal getPreco() { return preco; }
-    public void setPreco(BigDecimal preco) { this.preco = preco; }
+    public void setTipoServico(TipoServico tipoServico) {
+        this.tipoServico = tipoServico;
+    }
 
-    public String getDescricao() { return descricao; }
-    public void setDescricao(String descricao) { this.descricao = descricao; }
+    public BigDecimal getPreco() {
+        return preco;
+    }
 
-    public Integer getTempoMedioHoras() { return tempoMedioHoras; }
-    public void setTempoMedioHoras(Integer tempoMedioHoras) { this.tempoMedioHoras = tempoMedioHoras; }
+    public void setPreco(BigDecimal preco) {
+        this.preco = preco;
+    }
 
-    public boolean isAtivo() { return ativo; }
-    public void setAtivo(boolean ativo) { this.ativo = ativo; }
+    public String getDescricao() {
+        return descricao;
+    }
+
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
+    }
+
+    // GETTER E SETTER para DIAS
+    public Integer getTempoMedioDias() {
+        return tempoMedioDias;
+    }
+
+    public void setTempoMedioDias(Integer tempoMedioDias) {
+        this.tempoMedioDias = tempoMedioDias;
+    }
+
+    // MANTÉM getter/setter antigo para compatibilidade (opcional)
+    @Deprecated
+    public Integer getTempoMedioHoras() {
+        return tempoMedioDias != null ? tempoMedioDias * 24 : null;
+    }
+
+    @Deprecated
+    public void setTempoMedioHoras(Integer tempoMedioHoras) {
+        this.tempoMedioDias = tempoMedioHoras != null ? tempoMedioHoras / 24 : null;
+    }
+
+    public boolean isAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(boolean ativo) {
+        this.ativo = ativo;
+    }
 }
