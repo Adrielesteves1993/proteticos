@@ -1,13 +1,14 @@
+// src/main/java/com/proteticos/ordermanagement/model/Usuario.java
 package com.proteticos.ordermanagement.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;  // ← ADICIONE ESTE IMPORT
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
 @Table(name = "usuarios")
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})  // ← ADICIONE ESTA LINHA
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,14 +27,17 @@ public class Usuario {
     @Column(nullable = false)
     private UserTipo tipo;
 
+    @Column(name = "ativo", columnDefinition = "boolean default true")
     private boolean ativo = true;
 
+    @Column(name = "data_criacao", updatable = false)
     private LocalDateTime dataCriacao = LocalDateTime.now();
 
-    // Construtor padrão (OBRIGATÓRIO para JPA)
+    @Column(name = "data_atualizacao")
+    private LocalDateTime dataAtualizacao = LocalDateTime.now();
+
     public Usuario() {}
 
-    // Construtor com parâmetros
     public Usuario(String nome, String email, String senha, UserTipo tipo) {
         this.nome = nome;
         this.email = email;
@@ -41,7 +45,12 @@ public class Usuario {
         this.tipo = tipo;
     }
 
-    // GETTERS E SETTERS (OBRIGATÓRIOS)
+    @PreUpdate
+    protected void onUpdate() {
+        this.dataAtualizacao = LocalDateTime.now();
+    }
+
+    // GETTERS E SETTERS
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -62,4 +71,7 @@ public class Usuario {
 
     public LocalDateTime getDataCriacao() { return dataCriacao; }
     public void setDataCriacao(LocalDateTime dataCriacao) { this.dataCriacao = dataCriacao; }
+
+    public LocalDateTime getDataAtualizacao() { return dataAtualizacao; }
+    public void setDataAtualizacao(LocalDateTime dataAtualizacao) { this.dataAtualizacao = dataAtualizacao; }
 }

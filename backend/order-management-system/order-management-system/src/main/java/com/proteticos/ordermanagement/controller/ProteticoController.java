@@ -1,65 +1,86 @@
-// controller/ProteticoController.java
 package com.proteticos.ordermanagement.controller;
 
+import com.proteticos.ordermanagement.DTO.ProteticoDTO;
 import com.proteticos.ordermanagement.model.Protetico;
-import com.proteticos.ordermanagement.repository.ProteticoRepository;
+import com.proteticos.ordermanagement.service.ProteticoService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/proteticos")
-@CrossOrigin(origins = "http://localhost:3000") // IMPORTANTE para o Next.js
 public class ProteticoController {
 
     @Autowired
-    private ProteticoRepository proteticoRepository;
+    private ProteticoService proteticoService;
 
-    // GET - Listar todos os protéticos ATIVOS (o que seu front-end precisa)
     @GetMapping
-    public ResponseEntity<List<Protetico>> listarProteticosAtivos() {
-        try {
-            List<Protetico> proteticos = proteticoRepository.findByAtivoTrue();
-            return ResponseEntity.ok(proteticos);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
+    public ResponseEntity<List<ProteticoDTO>> listarTodos() {
+        List<ProteticoDTO> proteticos = proteticoService.listarTodos();
+        return ResponseEntity.ok(proteticos);
     }
 
-    // GET - Buscar protético por ID
+    @GetMapping("/ativos")
+    public ResponseEntity<List<ProteticoDTO>> listarAtivos() {
+        List<ProteticoDTO> proteticos = proteticoService.listarAtivos();
+        return ResponseEntity.ok(proteticos);
+    }
+
     @GetMapping("/{id}")
-    public ResponseEntity<Protetico> buscarProteticoPorId(@PathVariable Long id) {
+    public ResponseEntity<ProteticoDTO> buscarPorId(@PathVariable Long id) {
+        ProteticoDTO protetico = proteticoService.buscarPorId(id);
+        if (protetico == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(protetico);
+    }
+
+    @PostMapping
+    public ResponseEntity<ProteticoDTO> criarProtetico(@Valid @RequestBody Protetico protetico) {
         try {
-            Optional<Protetico> protetico = proteticoRepository.findById(id);
-            return protetico.map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            ProteticoDTO novo = proteticoService.criarProtetico(protetico);
+            return ResponseEntity.status(HttpStatus.CREATED).body(novo);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(null);
         }
     }
 
-    // GET - Buscar por especialização
-    @GetMapping("/especializacao/{especializacao}")
-    public ResponseEntity<List<Protetico>> buscarPorEspecializacao(@PathVariable String especializacao) {
+    @PutMapping("/{id}")
+    public ResponseEntity<ProteticoDTO> atualizarProtetico(
+            @PathVariable Long id,
+            @Valid @RequestBody ProteticoDTO proteticoDTO) {
         try {
-            List<Protetico> proteticos = proteticoRepository.findByEspecializacao(especializacao);
-            return ResponseEntity.ok(proteticos);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            ProteticoDTO atualizado = proteticoService.atualizarProtetico(id, proteticoDTO);
+            return ResponseEntity.ok(atualizado);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 
-    // GET - Protéticos que aceitam terceirização
-    @GetMapping("/terceirizacao")
-    public ResponseEntity<List<Protetico>> listarParaTerceirizacao() {
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> desativarProtetico(@PathVariable Long id) {
         try {
-            List<Protetico> proteticos = proteticoRepository.findByAceitaTerceirizacaoTrueAndAtivoTrue();
-            return ResponseEntity.ok(proteticos);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            proteticoService.desativarProtetico(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
         }
+    }
+
+    @GetMapping("/buscar")
+    public ResponseEntity<List<ProteticoDTO>> buscarPorEspecializacao(
+            @RequestParam String especializacao) {
+        List<ProteticoDTO> proteticos = proteticoService.buscarPorEspecializacao(especializacao);
+        return ResponseEntity.ok(proteticos);
+    }
+
+    @GetMapping("/buscar/nome")
+    public ResponseEntity<List<ProteticoDTO>> buscarPorNome(@RequestParam String nome) {
+        List<ProteticoDTO> proteticos = proteticoService.buscarPorNome(nome);
+        return ResponseEntity.ok(proteticos);
     }
 }

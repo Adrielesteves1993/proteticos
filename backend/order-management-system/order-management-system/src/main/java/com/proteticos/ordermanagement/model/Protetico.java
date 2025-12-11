@@ -1,26 +1,46 @@
+// src/main/java/com/proteticos/ordermanagement/model/Protetico.java
 package com.proteticos.ordermanagement.model;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;  // ← ADICIONE ESTE IMPORT
+import java.util.ArrayList;
+import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 @Entity
 @Table(name = "proteticos")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Protetico extends Usuario {
+
+    @Column(name = "registro_profissional")
     private String registroProfissional;
+
     private String especializacao;
+
+    @Column(name = "aceita_terceirizacao", columnDefinition = "boolean default true")
     private boolean aceitaTerceirizacao = true;
+
+    @Column(name = "valor_hora", precision = 10, scale = 2)
     private BigDecimal valorHora;
+
+    @Column(name = "capacidade_pedidos_simultaneos")
     private Integer capacidadePedidosSimultaneos = 5;
 
-    // Construtor padrão (OBRIGATÓRIO)
+    @OneToMany(mappedBy = "protetico", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<ServicoProtetico> servicos = new ArrayList<>();
+
     public Protetico() {}
 
-    // Construtor completo
     public Protetico(String nome, String email, String senha, String registroProfissional, String especializacao) {
         super(nome, email, senha, UserTipo.PROTETICO);
         this.registroProfissional = registroProfissional;
         this.especializacao = especializacao;
+    }
+
+    // Métodos utilitários
+    public void adicionarServico(ServicoProtetico servico) {
+        servico.setProtetico(this);
+        this.servicos.add(servico);
     }
 
     // GETTERS E SETTERS
@@ -38,4 +58,7 @@ public class Protetico extends Usuario {
 
     public Integer getCapacidadePedidosSimultaneos() { return capacidadePedidosSimultaneos; }
     public void setCapacidadePedidosSimultaneos(Integer capacidadePedidosSimultaneos) { this.capacidadePedidosSimultaneos = capacidadePedidosSimultaneos; }
+
+    public List<ServicoProtetico> getServicos() { return servicos; }
+    public void setServicos(List<ServicoProtetico> servicos) { this.servicos = servicos; }
 }
