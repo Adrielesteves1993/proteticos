@@ -348,8 +348,9 @@ public class PedidoController {
     }
 
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<PedidoResponseDTO>> listarPorStatus(@PathVariable StatusPedido status) {
-        List<Pedido> pedidos = pedidoRepository.findByStatus(status);
+    public ResponseEntity<List<PedidoResponseDTO>> listarPorStatus(
+            @PathVariable StatusPedido status) {
+        List<Pedido> pedidos = pedidoRepository.findByStatusPedido(status); // ← CORREÇÃO
         List<PedidoResponseDTO> dtos = pedidoService.converterListaParaDTO(pedidos);
         return ResponseEntity.ok(dtos);
     }

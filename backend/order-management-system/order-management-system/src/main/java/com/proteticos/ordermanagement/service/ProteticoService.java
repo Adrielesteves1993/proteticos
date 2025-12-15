@@ -26,13 +26,6 @@ public class ProteticoService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProteticoDTO> listarAtivos() {
-        return proteticoRepository.findByAtivoTrue().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
     public ProteticoDTO buscarPorId(Long id) {
         Optional<Protetico> protetico = proteticoRepository.findById(id);
         return protetico.map(this::convertToDTO).orElse(null);
@@ -79,21 +72,11 @@ public class ProteticoService {
             protetico.setRegistroProfissional(proteticoDTO.getRegistroProfissional());
         }
 
+        // APENAS este campo existe no seu Protetico.java
         protetico.setAceitaTerceirizacao(proteticoDTO.isAceitaTerceirizacao());
-        protetico.setValorHora(proteticoDTO.getValorHora());
-        protetico.setCapacidadePedidosSimultaneos(proteticoDTO.getCapacidadePedidosSimultaneos());
-        protetico.setAtivo(proteticoDTO.isAtivo());
 
         Protetico atualizado = proteticoRepository.save(protetico);
         return convertToDTO(atualizado);
-    }
-
-    @Transactional
-    public void desativarProtetico(Long id) {
-        Protetico protetico = proteticoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Protético não encontrado"));
-        protetico.setAtivo(false);
-        proteticoRepository.save(protetico);
     }
 
     @Transactional(readOnly = true)
@@ -110,6 +93,14 @@ public class ProteticoService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public void excluirProtetico(Long id) {
+        if (!proteticoRepository.existsById(id)) {
+            throw new RuntimeException("Protético não encontrado");
+        }
+        proteticoRepository.deleteById(id);
+    }
+
     private ProteticoDTO convertToDTO(Protetico protetico) {
         ProteticoDTO dto = new ProteticoDTO();
         dto.setId(protetico.getId());
@@ -118,10 +109,6 @@ public class ProteticoService {
         dto.setRegistroProfissional(protetico.getRegistroProfissional());
         dto.setEspecializacao(protetico.getEspecializacao());
         dto.setAceitaTerceirizacao(protetico.isAceitaTerceirizacao());
-        dto.setValorHora(protetico.getValorHora());
-        dto.setCapacidadePedidosSimultaneos(protetico.getCapacidadePedidosSimultaneos());
-        dto.setAtivo(protetico.isAtivo());
-        dto.setDataCriacao(protetico.getDataCriacao());
         return dto;
     }
 }

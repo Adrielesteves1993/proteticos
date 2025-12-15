@@ -44,7 +44,7 @@ export default function NovoPedido() {
   const carregarProteticos = async () => {
     try {
       console.log('🔄 Buscando protéticos...')
-      const response = await fetch('http://localhost:8080/api/proteticos/ativos')
+      const response = await fetch('http://localhost:8080/api/proteticos')
       if (response.ok) {
         const data = await response.json()
         console.log(`✅ ${data.length} protéticos carregados`)

@@ -1,4 +1,3 @@
-// controller/CadastroController.java
 package com.proteticos.ordermanagement.controller;
 
 import com.proteticos.ordermanagement.controller.dto.CadastroRequest;
@@ -13,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -65,21 +63,20 @@ public class CadastroController {
                 );
             }
 
-            // ✅✅✅ 5. Criar usuário CORRETAMENTE (usando herança) ✅✅✅
+            // 5. Criar usuário
             Usuario novoUsuario;
 
             if (request.getTipoUsuario() == UserTipo.DENTISTA) {
                 System.out.println("🦷 Criando DENTISTA...");
 
-                // ✅ Cria como Dentista desde o início
+                // ✅ Usando o construtor CORRETO da classe Dentista
                 Dentista dentista = new Dentista(
                         request.getNome(),
                         request.getEmail(),
-                        request.getSenha(),
+                        request.getSenha(), // Será armazenado como senhaHash no Usuario
                         request.getCro() != null ? request.getCro() : "A DEFINIR",
                         request.getEspecialidade() != null ? request.getEspecialidade() : "Clínica Geral"
                 );
-                dentista.setAtivo(true);
 
                 // Campos adicionais do dentista
                 if (request.getTelefone() != null) {
@@ -95,32 +92,30 @@ public class CadastroController {
             } else if (request.getTipoUsuario() == UserTipo.PROTETICO) {
                 System.out.println("🦺 Criando PROTÉTICO...");
 
-                // ✅ Cria como Protético desde o início
+                // ✅ AGORA USA CONSTRUTOR CORRETO (igual ao Dentista)
                 Protetico protetico = new Protetico(
                         request.getNome(),
                         request.getEmail(),
-                        request.getSenha(),
-                        request.getRegistroProfissional() != null ? request.getRegistroProfissional() : "A DEFINIR",
-                        request.getEspecializacao() != null ? request.getEspecializacao() : "Protética Geral"
+                        request.getSenha(),  // Será armazenado como 'senha' no Usuario
+                        request.getRegistroProfissional() != null ?
+                                request.getRegistroProfissional() : "A DEFINIR",
+                        request.getEspecializacao() != null ?
+                                request.getEspecializacao() : "Protética Geral"
                 );
-                protetico.setAtivo(true);
 
-                // Campos adicionais do protético
+                // Campos adicionais
+                if (request.getTelefone() != null) {
+                    protetico.setTelefone(request.getTelefone());
+                }
+
+                // Campos de terceirização
                 if (request.getAceitaTerceirizacao() != null) {
                     protetico.setAceitaTerceirizacao(request.getAceitaTerceirizacao());
                 }
-                if (request.getValorHora() != null) {
-                    protetico.setValorHora(request.getValorHora());
-                } else {
-                    protetico.setValorHora(BigDecimal.valueOf(150.00)); // Valor padrão
-                }
-                if (request.getCapacidadePedidosSimultaneos() != null) {
-                    protetico.setCapacidadePedidosSimultaneos(request.getCapacidadePedidosSimultaneos());
-                }
 
+                // ✅ NÃO precisa setTipo() - já está no construtor
                 novoUsuario = protetico;
                 System.out.println("✅ Protético criado: " + protetico.getNome());
-
             } else {
                 // Para outros tipos (ADMIN, etc.)
                 System.out.println("👤 Criando USUÁRIO genérico...");
@@ -130,10 +125,9 @@ public class CadastroController {
                         request.getSenha(),
                         request.getTipoUsuario()
                 );
-                novoUsuario.setAtivo(true);
             }
 
-            // ✅ Salva UMA VEZ - JPA cuida de salvar nas tabelas corretas
+            // ✅ Salva o usuário
             Usuario usuarioSalvo = usuarioService.salvar(novoUsuario);
             System.out.println("💾 Usuário salvo com ID: " + usuarioSalvo.getId());
 
@@ -143,18 +137,24 @@ public class CadastroController {
 
             // 7. Retornar sucesso
             Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
             response.put("message", "Usuário cadastrado com sucesso");
-            response.put("usuario", usuarioSalvo);
+            response.put("usuarioId", usuarioSalvo.getId());
             response.put("tipo", usuarioSalvo.getTipo());
+            response.put("nome", usuarioSalvo.getNome());
+            response.put("email", usuarioSalvo.getEmail());
 
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             System.err.println("❌ ERRO no cadastro: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.badRequest().body(
-                    Map.of("error", "Erro interno: " + e.getMessage())
-            );
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Erro no cadastro: " + e.getMessage());
+
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 }

@@ -1,12 +1,15 @@
 package com.proteticos.ordermanagement.controller;
 
-import com.proteticos.ordermanagement.model.Terceirizacao;
+import com.proteticos.ordermanagement.DTO.*;
+import com.proteticos.ordermanagement.model.TipoServico;
 import com.proteticos.ordermanagement.service.TerceirizacaoService;
-import com.proteticos.ordermanagement.DTO.SolicitacaoTerceirizacaoDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/terceirizacoes")
@@ -15,52 +18,241 @@ public class TerceirizacaoController {
     @Autowired
     private TerceirizacaoService terceirizacaoService;
 
-    @PostMapping("/solicitar")
-    public ResponseEntity<Terceirizacao> solicitarTerceirizacao(@RequestBody SolicitacaoTerceirizacaoDTO solicitacaoDTO) {
+    // ============ SOLICITAÇÃO DE TERCEIRIZAÇÃO ============
+
+    /**
+     * Solicita terceirização de um pedido
+     * POST /api/terceirizacoes/pedido/{pedidoId}/solicitar
+     */
+    @PostMapping("/pedido/{pedidoId}/solicitar")
+    public ResponseEntity<?> solicitarTerceirizacao(
+            @PathVariable Long pedidoId,
+            @RequestParam Long proteticoId, // ID do protético que está solicitando
+            @RequestBody SolicitarTerceirizacaoRequest request) {
         try {
-            Terceirizacao terceirizacao = terceirizacaoService.solicitarTerceirizacao(solicitacaoDTO);
-            return ResponseEntity.ok(terceirizacao);
+            TerceirizacaoResponseDTO response = terceirizacaoService.solicitarTerceirizacao(
+                    pedidoId, proteticoId, request
+            );
+
+            Map<String, Object> successResponse = new HashMap<>();
+            successResponse.put("success", true);
+            successResponse.put("message", "Terceirização solicitada com sucesso!");
+            successResponse.put("data", response);
+
+            return ResponseEntity.ok(successResponse);
+
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(null);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 
-    @PutMapping("/{id}/aceitar")
-    public ResponseEntity<Terceirizacao> aceitarTerceirizacao(
-            @PathVariable Long id,
-            @RequestParam Long proteticoDestinoId) {
+    // ============ ACEITAR/RECUSAR TERCEIRIZAÇÃO ============
+
+    /**
+     * Aceita uma terceirização (protético terceirizado)
+     * PUT /api/terceirizacoes/pedido/{pedidoId}/aceitar
+     */
+    @PutMapping("/pedido/{pedidoId}/aceitar")
+    public ResponseEntity<?> aceitarTerceirizacao(
+            @PathVariable Long pedidoId,
+            @RequestParam Long proteticoId) {
         try {
-            Terceirizacao terceirizacao = terceirizacaoService.aceitarSolicitacao(id, proteticoDestinoId);
-            return ResponseEntity.ok(terceirizacao);
+            TerceirizacaoResponseDTO response = terceirizacaoService.aceitarTerceirizacao(pedidoId, proteticoId);
+
+            Map<String, Object> successResponse = new HashMap<>();
+            successResponse.put("success", true);
+            successResponse.put("message", "Terceirização aceita com sucesso!");
+            successResponse.put("data", response);
+
+            return ResponseEntity.ok(successResponse);
+
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(null);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 
-    @PutMapping("/{id}/recusar")
-    public ResponseEntity<Terceirizacao> recusarTerceirizacao(
-            @PathVariable Long id,
-            @RequestParam Long proteticoDestinoId) {
+    /**
+     * Recusa uma terceirização (protético terceirizado)
+     * PUT /api/terceirizacoes/pedido/{pedidoId}/recusar
+     */
+    @PutMapping("/pedido/{pedidoId}/recusar")
+    public ResponseEntity<?> recusarTerceirizacao(
+            @PathVariable Long pedidoId,
+            @RequestParam Long proteticoId,
+            @RequestParam(required = false) String motivo) {
         try {
-            Terceirizacao terceirizacao = terceirizacaoService.recusarSolicitacao(id, proteticoDestinoId);
-            return ResponseEntity.ok(terceirizacao);
+            TerceirizacaoResponseDTO response = terceirizacaoService.recusarTerceirizacao(pedidoId, proteticoId, motivo);
+
+            Map<String, Object> successResponse = new HashMap<>();
+            successResponse.put("success", true);
+            successResponse.put("message", "Terceirização recusada com sucesso!");
+            successResponse.put("data", response);
+
+            return ResponseEntity.ok(successResponse);
+
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(null);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 
-    @GetMapping("/protetico/{proteticoId}/solicitacoes-recebidas")
-    public List<Terceirizacao> getSolicitacoesRecebidas(@PathVariable Long proteticoId) {
-        return terceirizacaoService.getSolicitacoesRecebidas(proteticoId);
+    // ============ EXECUÇÃO DA TERCEIRIZAÇÃO ============
+
+    /**
+     * Inicia a execução da terceirização (protético terceirizado)
+     * PUT /api/terceirizacoes/pedido/{pedidoId}/iniciar
+     */
+    @PutMapping("/pedido/{pedidoId}/iniciar")
+    public ResponseEntity<?> iniciarTerceirizacao(
+            @PathVariable Long pedidoId,
+            @RequestParam Long proteticoId) {
+        try {
+            TerceirizacaoResponseDTO response = terceirizacaoService.iniciarTerceirizacao(pedidoId, proteticoId);
+
+            Map<String, Object> successResponse = new HashMap<>();
+            successResponse.put("success", true);
+            successResponse.put("message", "Execução da terceirização iniciada!");
+            successResponse.put("data", response);
+
+            return ResponseEntity.ok(successResponse);
+
+        } catch (RuntimeException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 
-    @GetMapping("/protetico/{proteticoId}/solicitacoes-enviadas")
-    public List<Terceirizacao> getSolicitacoesEnviadas(@PathVariable Long proteticoId) {
-        return terceirizacaoService.getSolicitacoesEnviadas(proteticoId);
+    /**
+     * Conclui a terceirização (protético terceirizado)
+     * PUT /api/terceirizacoes/pedido/{pedidoId}/concluir
+     */
+    @PutMapping("/pedido/{pedidoId}/concluir")
+    public ResponseEntity<?> concluirTerceirizacao(
+            @PathVariable Long pedidoId,
+            @RequestParam Long proteticoId) {
+        try {
+            TerceirizacaoResponseDTO response = terceirizacaoService.concluirTerceirizacao(pedidoId, proteticoId);
+
+            Map<String, Object> successResponse = new HashMap<>();
+            successResponse.put("success", true);
+            successResponse.put("message", "Terceirização concluída com sucesso!");
+            successResponse.put("data", response);
+
+            return ResponseEntity.ok(successResponse);
+
+        } catch (RuntimeException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 
+    /**
+     * Cancela uma terceirização (qualquer protético envolvido)
+     * PUT /api/terceirizacoes/pedido/{pedidoId}/cancelar
+     */
+    @PutMapping("/pedido/{pedidoId}/cancelar")
+    public ResponseEntity<?> cancelarTerceirizacao(
+            @PathVariable Long pedidoId,
+            @RequestParam Long proteticoId,
+            @RequestParam(required = false) String motivo) {
+        try {
+            TerceirizacaoResponseDTO response = terceirizacaoService.cancelarTerceirizacao(pedidoId, proteticoId, motivo);
+
+            Map<String, Object> successResponse = new HashMap<>();
+            successResponse.put("success", true);
+            successResponse.put("message", "Terceirização cancelada com sucesso!");
+            successResponse.put("data", response);
+
+            return ResponseEntity.ok(successResponse);
+
+        } catch (RuntimeException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    // ============ CONSULTAS ============
+
+    /**
+     * Busca terceirização por ID do pedido
+     * GET /api/terceirizacoes/pedido/{pedidoId}
+     */
     @GetMapping("/pedido/{pedidoId}")
-    public List<Terceirizacao> getTerceirizacoesPorPedido(@PathVariable Long pedidoId) {
-        return terceirizacaoService.getTerceirizacoesPorPedido(pedidoId);
+    public ResponseEntity<?> buscarTerceirizacaoPorPedido(@PathVariable Long pedidoId) {
+        try {
+            TerceirizacaoResponseDTO response = terceirizacaoService.buscarPorPedidoId(pedidoId);
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    /**
+     * Lista todas terceirizações de um protético
+     * GET /api/terceirizacoes/protetico/{proteticoId}
+     */
+    @GetMapping("/protetico/{proteticoId}")
+    public ResponseEntity<?> listarTerceirizacoesPorProtetico(@PathVariable Long proteticoId) {
+        try {
+            List<TerceirizacaoResponseDTO> response = terceirizacaoService.listarTerceirizacoesPorProtetico(proteticoId);
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    /**
+     * Lista protéticos disponíveis para terceirização
+     * GET /api/terceirizacoes/disponiveis?pedidoId=1&tipoServico=COROA
+     */
+    @GetMapping("/disponiveis")
+    public ResponseEntity<?> listarProteticosDisponiveis(
+            @RequestParam(required = false) Long pedidoId,
+            @RequestParam(required = false) TipoServico tipoServico) {
+        try {
+            if (pedidoId == null && tipoServico == null) {
+                throw new RuntimeException("Informe pedidoId ou tipoServico");
+            }
+
+            List<ProteticoSimplesDTO> response;
+
+            if (pedidoId != null) {
+                response = terceirizacaoService.listarProteticosDisponiveis(pedidoId, tipoServico);
+            } else {
+                // Se não tem pedidoId, busca apenas por tipo de serviço
+                // (Você pode precisar adaptar o service para isso)
+                throw new RuntimeException("Funcionalidade em desenvolvimento");
+            }
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 }

@@ -1,81 +1,147 @@
-// src/main/java/com/proteticos/ordermanagement/model/Protetico.java
 package com.proteticos.ordermanagement.model;
 
 import jakarta.persistence.*;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonIgnore;  // ← ADICIONE ESTE IMPORT
+import java.math.BigDecimal;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "proteticos")
+@PrimaryKeyJoinColumn(name = "usuario_id")  // IMPORTANTE para herança JOINED
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class Protetico extends Usuario {
+public class Protetico extends Usuario {  // ← AGORA ESTENDE USUARIO!
 
-    @Column(name = "registro_profissional")
+    // ============ CAMPOS ESPECÍFICOS DO PROTÉTICO ============
+    private String telefone;
+
+    @Column(name = "registro_profissional", unique = true)
     private String registroProfissional;
 
     private String especializacao;
 
-    @Column(name = "aceita_terceirizacao", columnDefinition = "boolean default true")
-    private boolean aceitaTerceirizacao = true;
+    // ============ CAMPOS PARA TERCEIRIZAÇÃO ============
+    @Column(name = "aceita_terceirizacao")
+    private boolean aceitaTerceirizacao = false;
 
-    @Column(name = "valor_hora", precision = 10, scale = 2)
-    private BigDecimal valorHora;
+    @Column(name = "taxa_minima_terceirizacao", precision = 5, scale = 2)
+    private BigDecimal taxaMinimaTerceirizacao = BigDecimal.valueOf(30.00);
 
-    @Column(name = "capacidade_pedidos_simultaneos")
-    private Integer capacidadePedidosSimultaneos = 5;
+    @Column(name = "nota_terceirizacao", precision = 3, scale = 2)
+    private BigDecimal notaTerceirizacao = BigDecimal.ZERO;
 
-    @OneToMany(mappedBy = "protetico", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @JsonIgnore  // ← ADICIONE ESTA LINHA
-    private List<ServicoProtetico> servicos = new ArrayList<>();
+    @Column(name = "quantidade_terceirizacoes")
+    private Integer quantidadeTerceirizacoes = 0;
 
-    // ADICIONE ESTA RELAÇÃO (FALTAVA!)
-    @OneToMany(mappedBy = "protetico", fetch = FetchType.LAZY)
-    @JsonIgnore  // ← ADICIONE ESTA LINHA
-    private List<Pedido> pedidos = new ArrayList<>();
+    @ElementCollection
+    @CollectionTable(
+            name = "protetico_especialidades_terceirizacao",
+            joinColumns = @JoinColumn(name = "protetico_id")
+    )
+    @Column(name = "especialidade")
+    @Enumerated(EnumType.STRING)
+    private Set<TipoServico> especialidadesTerceirizacao = new HashSet<>();
 
-    public Protetico() {}
+    // ============ CONSTRUTORES ============
+    public Protetico() {
+        // Define tipo automaticamente como PROTETICO
+        this.setTipo(UserTipo.PROTETICO);
+    }
 
-    public Protetico(String nome, String email, String senha, String registroProfissional, String especializacao) {
+    // Construtor completo
+    public Protetico(String nome, String email, String senha,
+                     String registroProfissional, String especializacao) {
+        // Chama construtor do pai (Usuario)
         super(nome, email, senha, UserTipo.PROTETICO);
         this.registroProfissional = registroProfissional;
         this.especializacao = especializacao;
     }
 
-    // Métodos utilitários
-    public void adicionarServico(ServicoProtetico servico) {
-        servico.setProtetico(this);
-        this.servicos.add(servico);
-    }
+    // ============ GETTERS E SETTERS ESPECÍFICOS ============
+    public String getTelefone() { return telefone; }
+    public void setTelefone(String telefone) { this.telefone = telefone; }
 
-    // ADICIONE ESTE MÉTODO
-    public void adicionarPedido(Pedido pedido) {
-        pedido.setProtetico(this);
-        this.pedidos.add(pedido);
-    }
-
-    // GETTERS E SETTERS
     public String getRegistroProfissional() { return registroProfissional; }
-    public void setRegistroProfissional(String registroProfissional) { this.registroProfissional = registroProfissional; }
+    public void setRegistroProfissional(String registroProfissional) {
+        this.registroProfissional = registroProfissional;
+    }
 
     public String getEspecializacao() { return especializacao; }
-    public void setEspecializacao(String especializacao) { this.especializacao = especializacao; }
+    public void setEspecializacao(String especializacao) {
+        this.especializacao = especializacao;
+    }
 
+    // ============ GETTERS E SETTERS DA TERCEIRIZAÇÃO ============
     public boolean isAceitaTerceirizacao() { return aceitaTerceirizacao; }
-    public void setAceitaTerceirizacao(boolean aceitaTerceirizacao) { this.aceitaTerceirizacao = aceitaTerceirizacao; }
+    public void setAceitaTerceirizacao(boolean aceitaTerceirizacao) {
+        this.aceitaTerceirizacao = aceitaTerceirizacao;
+    }
 
-    public BigDecimal getValorHora() { return valorHora; }
-    public void setValorHora(BigDecimal valorHora) { this.valorHora = valorHora; }
+    public BigDecimal getTaxaMinimaTerceirizacao() { return taxaMinimaTerceirizacao; }
+    public void setTaxaMinimaTerceirizacao(BigDecimal taxaMinimaTerceirizacao) {
+        this.taxaMinimaTerceirizacao = taxaMinimaTerceirizacao;
+    }
 
-    public Integer getCapacidadePedidosSimultaneos() { return capacidadePedidosSimultaneos; }
-    public void setCapacidadePedidosSimultaneos(Integer capacidadePedidosSimultaneos) { this.capacidadePedidosSimultaneos = capacidadePedidosSimultaneos; }
+    public BigDecimal getNotaTerceirizacao() { return notaTerceirizacao; }
+    public void setNotaTerceirizacao(BigDecimal notaTerceirizacao) {
+        this.notaTerceirizacao = notaTerceirizacao;
+    }
 
-    public List<ServicoProtetico> getServicos() { return servicos; }
-    public void setServicos(List<ServicoProtetico> servicos) { this.servicos = servicos; }
+    public Integer getQuantidadeTerceirizacoes() { return quantidadeTerceirizacoes; }
+    public void setQuantidadeTerceirizacoes(Integer quantidadeTerceirizacoes) {
+        this.quantidadeTerceirizacoes = quantidadeTerceirizacoes;
+    }
 
-    // ADICIONE ESTE GETTER/SETTER
-    public List<Pedido> getPedidos() { return pedidos; }
-    public void setPedidos(List<Pedido> pedidos) { this.pedidos = pedidos; }
+    public Set<TipoServico> getEspecialidadesTerceirizacao() {
+        return especialidadesTerceirizacao;
+    }
+
+    public void setEspecialidadesTerceirizacao(Set<TipoServico> especialidadesTerceirizacao) {
+        this.especialidadesTerceirizacao = especialidadesTerceirizacao;
+    }
+
+    // ============ MÉTODOS AUXILIARES ============
+    public void adicionarEspecialidade(TipoServico especialidade) {
+        this.especialidadesTerceirizacao.add(especialidade);
+    }
+
+    public void removerEspecialidade(TipoServico especialidade) {
+        this.especialidadesTerceirizacao.remove(especialidade);
+    }
+
+    public boolean aceitaTerceirizacaoPara(TipoServico tipoServico) {
+        if (!aceitaTerceirizacao) {
+            return false;
+        }
+        if (especialidadesTerceirizacao == null || especialidadesTerceirizacao.isEmpty()) {
+            return true;
+        }
+        return especialidadesTerceirizacao.contains(tipoServico);
+    }
+
+    public void atualizarNotaTerceirizacao(BigDecimal novaNota) {
+        if (quantidadeTerceirizacoes == 0) {
+            this.notaTerceirizacao = novaNota;
+            this.quantidadeTerceirizacoes = 1;
+        } else {
+            BigDecimal totalAtual = this.notaTerceirizacao.multiply(
+                    BigDecimal.valueOf(quantidadeTerceirizacoes));
+            BigDecimal novoTotal = totalAtual.add(novaNota);
+            this.notaTerceirizacao = novoTotal.divide(
+                    BigDecimal.valueOf(quantidadeTerceirizacoes + 1),
+                    2, java.math.RoundingMode.HALF_UP);
+            this.quantidadeTerceirizacoes++;
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "Protetico{" +
+                "id=" + getId() +
+                ", nome='" + getNome() + '\'' +
+                ", email='" + getEmail() + '\'' +
+                ", registroProfissional='" + registroProfissional + '\'' +
+                ", aceitaTerceirizacao=" + aceitaTerceirizacao +
+                '}';
+    }
 }

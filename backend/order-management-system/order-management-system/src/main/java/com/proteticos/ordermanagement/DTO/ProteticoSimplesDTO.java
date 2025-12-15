@@ -1,5 +1,6 @@
-// src/main/java/com/proteticos/ordermanagement/DTO/ProteticoSimplesDTO.java
 package com.proteticos.ordermanagement.DTO;
+
+import java.math.BigDecimal;
 
 public class ProteticoSimplesDTO {
     private Long id;
@@ -9,9 +10,14 @@ public class ProteticoSimplesDTO {
     private String especializacao;
     private Boolean aceitaTerceirizacao;
 
+    // ============ NOVOS CAMPOS PARA TERCEIRIZAÇÃO ============
+    private BigDecimal notaTerceirizacao;
+    private Integer quantidadeTerceirizacoes;
+    private BigDecimal taxaMinimaTerceirizacao;
+
     public ProteticoSimplesDTO() {}
 
-    // Getters e Setters
+    // ============ GETTERS E SETTERS BÁSICOS ============
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -29,4 +35,30 @@ public class ProteticoSimplesDTO {
 
     public Boolean getAceitaTerceirizacao() { return aceitaTerceirizacao; }
     public void setAceitaTerceirizacao(Boolean aceitaTerceirizacao) { this.aceitaTerceirizacao = aceitaTerceirizacao; }
+
+    // Para compatibilidade (método is... além de get...)
+    public boolean isAceitaTerceirizacao() {
+        return aceitaTerceirizacao != null && aceitaTerceirizacao;
+    }
+
+    // ============ GETTERS E SETTERS DOS NOVOS CAMPOS ============
+    public BigDecimal getNotaTerceirizacao() { return notaTerceirizacao; }
+    public void setNotaTerceirizacao(BigDecimal notaTerceirizacao) { this.notaTerceirizacao = notaTerceirizacao; }
+
+    public Integer getQuantidadeTerceirizacoes() { return quantidadeTerceirizacoes; }
+    public void setQuantidadeTerceirizacoes(Integer quantidadeTerceirizacoes) { this.quantidadeTerceirizacoes = quantidadeTerceirizacoes; }
+
+    public BigDecimal getTaxaMinimaTerceirizacao() { return taxaMinimaTerceirizacao; }
+    public void setTaxaMinimaTerceirizacao(BigDecimal taxaMinimaTerceirizacao) { this.taxaMinimaTerceirizacao = taxaMinimaTerceirizacao; }
+
+    @Override
+    public String toString() {
+        return "ProteticoSimplesDTO{" +
+                "id=" + id +
+                ", nome='" + nome + '\'' +
+                ", email='" + email + '\'' +
+                ", especializacao='" + especializacao + '\'' +
+                ", aceitaTerceirizacao=" + aceitaTerceirizacao +
+                '}';
+    }
 }

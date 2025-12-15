@@ -275,12 +275,16 @@ public class PedidoService {
         pedidoRepository.deleteById(pedidoId);
     }
 
+    // Mudar findByStatus() para findByStatusPedido()
     public List<Pedido> buscarPorStatus(StatusPedido status) {
-        return pedidoRepository.findByStatus(status);
+        return pedidoRepository.findByStatusPedido(status); // ← CORREÇÃO
     }
 
     public List<Pedido> buscarAtrasados() {
         LocalDate hoje = LocalDate.now();
-        return pedidoRepository.findByDataPrevistaEntregaBeforeAndStatusNot(hoje, StatusPedido.FINALIZADO);
+        return pedidoRepository.findByDataPrevistaEntregaBeforeAndStatusPedidoNot(
+                hoje,
+                StatusPedido.FINALIZADO
+        );
     }
 }

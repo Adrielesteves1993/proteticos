@@ -3,7 +3,6 @@ package com.proteticos.ordermanagement.controller;
 import com.proteticos.ordermanagement.DTO.ProteticoDTO;
 import com.proteticos.ordermanagement.model.Protetico;
 import com.proteticos.ordermanagement.service.ProteticoService;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,18 +17,22 @@ public class ProteticoController {
     @Autowired
     private ProteticoService proteticoService;
 
+    // ============ LISTAGEM ============
+
+    /**
+     * Lista todos os protéticos
+     * GET /api/proteticos
+     */
     @GetMapping
     public ResponseEntity<List<ProteticoDTO>> listarTodos() {
         List<ProteticoDTO> proteticos = proteticoService.listarTodos();
         return ResponseEntity.ok(proteticos);
     }
 
-    @GetMapping("/ativos")
-    public ResponseEntity<List<ProteticoDTO>> listarAtivos() {
-        List<ProteticoDTO> proteticos = proteticoService.listarAtivos();
-        return ResponseEntity.ok(proteticos);
-    }
-
+    /**
+     * Busca protético por ID
+     * GET /api/proteticos/{id}
+     */
     @GetMapping("/{id}")
     public ResponseEntity<ProteticoDTO> buscarPorId(@PathVariable Long id) {
         ProteticoDTO protetico = proteticoService.buscarPorId(id);
@@ -39,48 +42,134 @@ public class ProteticoController {
         return ResponseEntity.ok(protetico);
     }
 
+    // ============ CRIAÇÃO ============
+
+    /**
+     * Cria um novo protético
+     * POST /api/proteticos
+     */
     @PostMapping
-    public ResponseEntity<ProteticoDTO> criarProtetico(@Valid @RequestBody Protetico protetico) {
+    public ResponseEntity<?> criarProtetico(@RequestBody Protetico protetico) {
         try {
             ProteticoDTO novo = proteticoService.criarProtetico(protetico);
-            return ResponseEntity.status(HttpStatus.CREATED).body(novo);
+
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(novo);
+
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity
+                    .badRequest()
+                    .body(createErrorResponse(e.getMessage()));
         }
     }
 
+    // ============ ATUALIZAÇÃO ============
+
+    /**
+     * Atualiza um protético existente
+     * PUT /api/proteticos/{id}
+     */
     @PutMapping("/{id}")
-    public ResponseEntity<ProteticoDTO> atualizarProtetico(
+    public ResponseEntity<?> atualizarProtetico(
             @PathVariable Long id,
-            @Valid @RequestBody ProteticoDTO proteticoDTO) {
+            @RequestBody ProteticoDTO proteticoDTO) {
         try {
             ProteticoDTO atualizado = proteticoService.atualizarProtetico(id, proteticoDTO);
             return ResponseEntity.ok(atualizado);
+
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity
+                    .badRequest()
+                    .body(createErrorResponse(e.getMessage()));
         }
     }
 
+    // ============ EXCLUSÃO ============
+
+    /**
+     * Exclui um protético
+     * DELETE /api/proteticos/{id}
+     */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> desativarProtetico(@PathVariable Long id) {
+    public ResponseEntity<?> excluirProtetico(@PathVariable Long id) {
         try {
-            proteticoService.desativarProtetico(id);
+            proteticoService.excluirProtetico(id);
             return ResponseEntity.noContent().build();
+
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity
+                    .badRequest()
+                    .body(createErrorResponse(e.getMessage()));
         }
     }
 
+    // ============ BUSCAS ESPECÍFICAS ============
+
+    /**
+     * Busca protéticos por especialização
+     * GET /api/proteticos/buscar?especializacao=Zircônia
+     */
     @GetMapping("/buscar")
-    public ResponseEntity<List<ProteticoDTO>> buscarPorEspecializacao(
+    public ResponseEntity<?> buscarPorEspecializacao(
             @RequestParam String especializacao) {
-        List<ProteticoDTO> proteticos = proteticoService.buscarPorEspecializacao(especializacao);
-        return ResponseEntity.ok(proteticos);
+        try {
+            List<ProteticoDTO> proteticos = proteticoService.buscarPorEspecializacao(especializacao);
+            return ResponseEntity.ok(proteticos);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(createErrorResponse(e.getMessage()));
+        }
     }
 
+    /**
+     * Busca protéticos por nome
+     * GET /api/proteticos/buscar/nome?nome=Carlos
+     */
     @GetMapping("/buscar/nome")
-    public ResponseEntity<List<ProteticoDTO>> buscarPorNome(@RequestParam String nome) {
-        List<ProteticoDTO> proteticos = proteticoService.buscarPorNome(nome);
-        return ResponseEntity.ok(proteticos);
+    public ResponseEntity<?> buscarPorNome(@RequestParam String nome) {
+        try {
+            List<ProteticoDTO> proteticos = proteticoService.buscarPorNome(nome);
+            return ResponseEntity.ok(proteticos);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(createErrorResponse(e.getMessage()));
+        }
+    }
+
+    /**
+     * Busca protéticos que aceitam terceirização
+     * GET /api/proteticos/aceitam-terceirizacao
+     */
+    @GetMapping("/aceitam-terceirizacao")
+    public ResponseEntity<?> listarQueAceitamTerceirizacao() {
+        try {
+            List<ProteticoDTO> proteticos = proteticoService.listarTodos()
+                    .stream()
+                    .filter(ProteticoDTO::isAceitaTerceirizacao)
+                    .toList();
+            return ResponseEntity.ok(proteticos);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(createErrorResponse(e.getMessage()));
+        }
+    }
+
+    // ============ MÉTODOS AUXILIARES ============
+
+    /**
+     * Cria resposta de erro padronizada
+     */
+    private Object createErrorResponse(String message) {
+        return new Object() {
+            public final boolean success = false;
+            public final String error = message;
+        };
     }
 }

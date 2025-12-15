@@ -45,7 +45,7 @@ public class Terceirizacao {
         this.proteticoDestino = proteticoDestino;
         this.pedido = pedido;
         this.servicoSolicitado = servicoSolicitado;
-        this.status = StatusTerceirizacao.SOLICITADA;
+
     }
 
     // Getters e Setters (PRECISAMOS DE TODOS!)
