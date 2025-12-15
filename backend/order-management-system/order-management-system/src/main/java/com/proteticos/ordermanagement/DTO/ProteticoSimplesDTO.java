@@ -1,6 +1,5 @@
+// src/main/java/com/proteticos/ordermanagement/DTO/ProteticoSimplesDTO.java
 package com.proteticos.ordermanagement.DTO;
-
-import java.math.BigDecimal;
 
 public class ProteticoSimplesDTO {
     private Long id;
@@ -8,9 +7,7 @@ public class ProteticoSimplesDTO {
     private String email;
     private String registroProfissional;
     private String especializacao;
-    private boolean aceitaTerceirizacao;
-    private BigDecimal valorHora;
-    private Integer capacidadePedidosSimultaneos;
+    private Boolean aceitaTerceirizacao;
 
     public ProteticoSimplesDTO() {}
 
@@ -30,12 +27,6 @@ public class ProteticoSimplesDTO {
     public String getEspecializacao() { return especializacao; }
     public void setEspecializacao(String especializacao) { this.especializacao = especializacao; }
 
-    public boolean isAceitaTerceirizacao() { return aceitaTerceirizacao; }
-    public void setAceitaTerceirizacao(boolean aceitaTerceirizacao) { this.aceitaTerceirizacao = aceitaTerceirizacao; }
-
-    public BigDecimal getValorHora() { return valorHora; }
-    public void setValorHora(BigDecimal valorHora) { this.valorHora = valorHora; }
-
-    public Integer getCapacidadePedidosSimultaneos() { return capacidadePedidosSimultaneos; }
-    public void setCapacidadePedidosSimultaneos(Integer capacidadePedidosSimultaneos) { this.capacidadePedidosSimultaneos = capacidadePedidosSimultaneos; }
+    public Boolean getAceitaTerceirizacao() { return aceitaTerceirizacao; }
+    public void setAceitaTerceirizacao(Boolean aceitaTerceirizacao) { this.aceitaTerceirizacao = aceitaTerceirizacao; }
 }

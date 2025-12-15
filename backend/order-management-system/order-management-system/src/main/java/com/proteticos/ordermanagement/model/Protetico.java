@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;  // ← ADICIONE ESTE IMPORT
 
 @Entity
 @Table(name = "proteticos")
@@ -27,7 +28,13 @@ public class Protetico extends Usuario {
     private Integer capacidadePedidosSimultaneos = 5;
 
     @OneToMany(mappedBy = "protetico", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore  // ← ADICIONE ESTA LINHA
     private List<ServicoProtetico> servicos = new ArrayList<>();
+
+    // ADICIONE ESTA RELAÇÃO (FALTAVA!)
+    @OneToMany(mappedBy = "protetico", fetch = FetchType.LAZY)
+    @JsonIgnore  // ← ADICIONE ESTA LINHA
+    private List<Pedido> pedidos = new ArrayList<>();
 
     public Protetico() {}
 
@@ -41,6 +48,12 @@ public class Protetico extends Usuario {
     public void adicionarServico(ServicoProtetico servico) {
         servico.setProtetico(this);
         this.servicos.add(servico);
+    }
+
+    // ADICIONE ESTE MÉTODO
+    public void adicionarPedido(Pedido pedido) {
+        pedido.setProtetico(this);
+        this.pedidos.add(pedido);
     }
 
     // GETTERS E SETTERS
@@ -61,4 +74,8 @@ public class Protetico extends Usuario {
 
     public List<ServicoProtetico> getServicos() { return servicos; }
     public void setServicos(List<ServicoProtetico> servicos) { this.servicos = servicos; }
+
+    // ADICIONE ESTE GETTER/SETTER
+    public List<Pedido> getPedidos() { return pedidos; }
+    public void setPedidos(List<Pedido> pedidos) { this.pedidos = pedidos; }
 }

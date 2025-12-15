@@ -1,3 +1,4 @@
+// src/main/java/com/proteticos/ordermanagement/model/Pedido.java
 package com.proteticos.ordermanagement.model;
 
 import jakarta.persistence.*;
@@ -25,6 +26,7 @@ public class Pedido {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "protetico_id", nullable = false)
+    @JsonIgnoreProperties({"pedidos", "servicos", "senha"})
     private Protetico protetico;
 
     @Enumerated(EnumType.STRING)
@@ -39,16 +41,15 @@ public class Pedido {
     private LocalDate dataEntrada;
     private LocalDate dataPrevistaEntrega;
     private LocalDate dataEntrega;
-    private LocalDate dataCancelamento; // ← ADICIONADO
+    private LocalDate dataCancelamento;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, columnDefinition = "VARCHAR(50)")
-    private StatusPedido status = StatusPedido.AGUARDANDO_APROVACAO; // ← MUDADO para AGUARDANDO_APROVACAO
+    private StatusPedido status = StatusPedido.AGUARDANDO_APROVACAO;
 
     private LocalDateTime dataCriacao = LocalDateTime.now();
-    private LocalDateTime dataUltimaAtualizacao; // ← ADICIONADO
+    private LocalDateTime dataUltimaAtualizacao;
 
-    // RELACIONAMENTO COM ETAPAS - DENTRO DA CLASSE!
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnoreProperties("pedido")
     private List<EtapaPedido> etapas = new ArrayList<>();
@@ -74,57 +75,152 @@ public class Pedido {
         if (this.dataEntrada == null) {
             this.dataEntrada = LocalDate.now();
         }
-        this.dataUltimaAtualizacao = LocalDateTime.now(); // ← Atualiza sempre
+        this.dataUltimaAtualizacao = LocalDateTime.now();
     }
 
-    // GETTERS E SETTERS
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    // ============ GETTERS E SETTERS ============
 
-    public String getCodigo() { return codigo; }
-    public void setCodigo(String codigo) { this.codigo = codigo; }
+    public Long getId() {
+        return id;
+    }
 
-    public Dentista getDentista() { return dentista; }
-    public void setDentista(Dentista dentista) { this.dentista = dentista; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public Protetico getProtetico() { return protetico; }
-    public void setProtetico(Protetico protetico) { this.protetico = protetico; }
+    public String getCodigo() {
+        return codigo;
+    }
 
-    public TipoServico getTipoServico() { return tipoServico; }
-    public void setTipoServico(TipoServico tipoServico) { this.tipoServico = tipoServico; }
+    public void setCodigo(String codigo) {
+        this.codigo = codigo;
+    }
 
-    public String getInformacoesDetalhadas() { return informacoesDetalhadas; }
-    public void setInformacoesDetalhadas(String informacoesDetalhadas) { this.informacoesDetalhadas = informacoesDetalhadas; }
+    public Dentista getDentista() {
+        return dentista;
+    }
 
-    public BigDecimal getValorCobrado() { return valorCobrado; }
-    public void setValorCobrado(BigDecimal valorCobrado) { this.valorCobrado = valorCobrado; }
+    public void setDentista(Dentista dentista) {
+        this.dentista = dentista;
+    }
 
-    public LocalDate getDataEntrada() { return dataEntrada; }
-    public void setDataEntrada(LocalDate dataEntrada) { this.dataEntrada = dataEntrada; }
+    public Protetico getProtetico() {
+        return protetico;
+    }
 
-    public LocalDate getDataPrevistaEntrega() { return dataPrevistaEntrega; }
-    public void setDataPrevistaEntrega(LocalDate dataPrevistaEntrega) { this.dataPrevistaEntrega = dataPrevistaEntrega; }
+    public void setProtetico(Protetico protetico) {
+        this.protetico = protetico;
+    }
 
-    public LocalDate getDataEntrega() { return dataEntrega; }
-    public void setDataEntrega(LocalDate dataEntrega) { this.dataEntrega = dataEntrega; }
+    public TipoServico getTipoServico() {
+        return tipoServico;
+    }
 
-    public LocalDate getDataCancelamento() { return dataCancelamento; } // ← ADICIONADO
-    public void setDataCancelamento(LocalDate dataCancelamento) { this.dataCancelamento = dataCancelamento; } // ← ADICIONADO
+    public void setTipoServico(TipoServico tipoServico) {
+        this.tipoServico = tipoServico;
+    }
 
-    public StatusPedido getStatus() { return status; }
-    public void setStatus(StatusPedido status) { this.status = status; }
+    public String getInformacoesDetalhadas() {
+        return informacoesDetalhadas;
+    }
 
-    public LocalDateTime getDataCriacao() { return dataCriacao; }
-    public void setDataCriacao(LocalDateTime dataCriacao) { this.dataCriacao = dataCriacao; }
+    public void setInformacoesDetalhadas(String informacoesDetalhadas) {
+        this.informacoesDetalhadas = informacoesDetalhadas;
+    }
 
-    public LocalDateTime getDataUltimaAtualizacao() { return dataUltimaAtualizacao; } // ← ADICIONADO
-    public void setDataUltimaAtualizacao(LocalDateTime dataUltimaAtualizacao) { this.dataUltimaAtualizacao = dataUltimaAtualizacao; } // ← ADICIONADO
+    public BigDecimal getValorCobrado() {
+        return valorCobrado;
+    }
 
-    public List<EtapaPedido> getEtapas() { return etapas; }
-    public void setEtapas(List<EtapaPedido> etapas) { this.etapas = etapas; }
+    public void setValorCobrado(BigDecimal valorCobrado) {
+        this.valorCobrado = valorCobrado;
+    }
 
-    // MÉTODO AUXILIAR: Verificar se pedido está ativo
-    public boolean isAtivo() {
-        return this.status != StatusPedido.FINALIZADO && this.status != StatusPedido.CANCELADO;
+    public LocalDate getDataEntrada() {
+        return dataEntrada;
+    }
+
+    public void setDataEntrada(LocalDate dataEntrada) {
+        this.dataEntrada = dataEntrada;
+    }
+
+    public LocalDate getDataPrevistaEntrega() {
+        return dataPrevistaEntrega;
+    }
+
+    public void setDataPrevistaEntrega(LocalDate dataPrevistaEntrega) {
+        this.dataPrevistaEntrega = dataPrevistaEntrega;
+    }
+
+    public LocalDate getDataEntrega() {
+        return dataEntrega;
+    }
+
+    public void setDataEntrega(LocalDate dataEntrega) {
+        this.dataEntrega = dataEntrega;
+    }
+
+    public LocalDate getDataCancelamento() {
+        return dataCancelamento;
+    }
+
+    public void setDataCancelamento(LocalDate dataCancelamento) {
+        this.dataCancelamento = dataCancelamento;
+    }
+
+    public StatusPedido getStatus() {
+        return status;
+    }
+
+    public void setStatus(StatusPedido status) {
+        this.status = status;
+    }
+
+    public LocalDateTime getDataCriacao() {
+        return dataCriacao;
+    }
+
+    public void setDataCriacao(LocalDateTime dataCriacao) {
+        this.dataCriacao = dataCriacao;
+    }
+
+    public LocalDateTime getDataUltimaAtualizacao() {
+        return dataUltimaAtualizacao;
+    }
+
+    public void setDataUltimaAtualizacao(LocalDateTime dataUltimaAtualizacao) {
+        this.dataUltimaAtualizacao = dataUltimaAtualizacao;
+    }
+
+    public List<EtapaPedido> getEtapas() {
+        return etapas;
+    }
+
+    public void setEtapas(List<EtapaPedido> etapas) {
+        this.etapas = etapas;
+    }
+
+    // ============ MÉTODOS AUXILIARES ============
+
+    public boolean isFinalizado() {
+        return status == StatusPedido.FINALIZADO;
+    }
+
+    public boolean isCancelado() {
+        return status == StatusPedido.CANCELADO;
+    }
+
+    public boolean isEstadoFinal() {
+        return isFinalizado() || isCancelado();
+    }
+
+    @Override
+    public String toString() {
+        return "Pedido{" +
+                "id=" + id +
+                ", codigo='" + codigo + '\'' +
+                ", status=" + status +
+                ", dataEntrada=" + dataEntrada +
+                '}';
     }
 }

@@ -54,15 +54,22 @@ public class PedidoService {
             dentistaDTO.setNome(pedido.getDentista().getNome());
             dentistaDTO.setEmail(pedido.getDentista().getEmail());
             dentistaDTO.setCro(pedido.getDentista().getCro());
+            dentistaDTO.setEspecialidade(pedido.getDentista().getEspecialidade()); // ← ADICIONE
             dto.setDentista(dentistaDTO);
         }
 
-        // Converter protético
+        // Converter protético - CORRIJA AQUI!
         if (pedido.getProtetico() != null) {
             ProteticoSimplesDTO proteticoDTO = new ProteticoSimplesDTO();
             proteticoDTO.setId(pedido.getProtetico().getId());
             proteticoDTO.setNome(pedido.getProtetico().getNome());
             proteticoDTO.setEmail(pedido.getProtetico().getEmail());
+
+            // ⚠️ ESTES CAMPOS ESTÃO FALTANDO!
+            proteticoDTO.setRegistroProfissional(pedido.getProtetico().getRegistroProfissional());
+            proteticoDTO.setEspecializacao(pedido.getProtetico().getEspecializacao());
+            proteticoDTO.setAceitaTerceirizacao(pedido.getProtetico().isAceitaTerceirizacao());
+
             dto.setProtetico(proteticoDTO);
         }
 
