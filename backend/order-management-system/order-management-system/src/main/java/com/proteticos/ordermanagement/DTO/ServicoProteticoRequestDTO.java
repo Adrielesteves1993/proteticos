@@ -1,5 +1,6 @@
 package com.proteticos.ordermanagement.DTO;
 
+import com.proteticos.ordermanagement.model.PoliticaExecucaoServico; // NOVO IMPORT
 import com.proteticos.ordermanagement.model.TipoServico;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -17,9 +18,22 @@ public class ServicoProteticoRequestDTO {
     private String descricao;
 
     @Positive(message = "Tempo médio deve ser positivo")
-    private Integer tempoMedioDias; // MUDOU: horas → dias
+    private Integer tempoMedioDias;
 
     private boolean ativo = true;
+
+    // NOVOS CAMPOS PARA TERCEIRIZAÇÃO
+    @NotNull(message = "Política de execução é obrigatória")
+    private PoliticaExecucaoServico politicaExecucao = PoliticaExecucaoServico.PROPRIO;
+
+    @Positive(message = "Preço terceirizado deve ser positivo")
+    private BigDecimal precoTerceirizado;
+
+    @Positive(message = "Prazo terceirizado deve ser positivo")
+    private Integer prazoTerceirizadoDias;
+
+    private Long terceirizadoPreferidoId;
+    private String observacoesTerceirizacao;
 
     // GETTERS E SETTERS
     public TipoServico getTipoServico() {
@@ -46,7 +60,6 @@ public class ServicoProteticoRequestDTO {
         this.descricao = descricao;
     }
 
-    // GETTER E SETTER para DIAS
     public Integer getTempoMedioDias() {
         return tempoMedioDias;
     }
@@ -55,22 +68,52 @@ public class ServicoProteticoRequestDTO {
         this.tempoMedioDias = tempoMedioDias;
     }
 
-    // MANTÉM getter/setter antigo para compatibilidade (opcional)
-    @Deprecated
-    public Integer getTempoMedioHoras() {
-        return tempoMedioDias != null ? tempoMedioDias * 24 : null;
-    }
-
-    @Deprecated
-    public void setTempoMedioHoras(Integer tempoMedioHoras) {
-        this.tempoMedioDias = tempoMedioHoras != null ? tempoMedioHoras / 24 : null;
-    }
-
     public boolean isAtivo() {
         return ativo;
     }
 
     public void setAtivo(boolean ativo) {
         this.ativo = ativo;
+    }
+
+    // NOVOS GETTERS E SETTERS
+    public PoliticaExecucaoServico getPoliticaExecucao() {
+        return politicaExecucao;
+    }
+
+    public void setPoliticaExecucao(PoliticaExecucaoServico politicaExecucao) {
+        this.politicaExecucao = politicaExecucao;
+    }
+
+    public BigDecimal getPrecoTerceirizado() {
+        return precoTerceirizado;
+    }
+
+    public void setPrecoTerceirizado(BigDecimal precoTerceirizado) {
+        this.precoTerceirizado = precoTerceirizado;
+    }
+
+    public Integer getPrazoTerceirizadoDias() {
+        return prazoTerceirizadoDias;
+    }
+
+    public void setPrazoTerceirizadoDias(Integer prazoTerceirizadoDias) {
+        this.prazoTerceirizadoDias = prazoTerceirizadoDias;
+    }
+
+    public Long getTerceirizadoPreferidoId() {
+        return terceirizadoPreferidoId;
+    }
+
+    public void setTerceirizadoPreferidoId(Long terceirizadoPreferidoId) {
+        this.terceirizadoPreferidoId = terceirizadoPreferidoId;
+    }
+
+    public String getObservacoesTerceirizacao() {
+        return observacoesTerceirizacao;
+    }
+
+    public void setObservacoesTerceirizacao(String observacoesTerceirizacao) {
+        this.observacoesTerceirizacao = observacoesTerceirizacao;
     }
 }

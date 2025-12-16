@@ -38,6 +38,24 @@ public class ServicoProtetico {
     @Column(name = "tempo_medio_horas")
     private Integer tempoMedioHoras;
 
+    // NOVO: Campo para controle de terceirização
+    @Enumerated(EnumType.STRING)
+    @Column(name = "politica_execucao", nullable = false)
+    private PoliticaExecucaoServico politicaExecucao = PoliticaExecucaoServico.PROPRIO;
+
+    // NOVO: Se aceitar terceirização, pode ter campos adicionais
+    @Column(name = "preco_terceirizado", precision = 10, scale = 2)
+    private BigDecimal precoTerceirizado;
+
+    @Column(name = "prazo_terceirizado_horas")
+    private Integer prazoTerceirizadoHoras;
+
+    @Column(name = "terceirizado_preferido_id")
+    private Long terceirizadoPreferidoId; // ID de outro protético ou fornecedor
+
+    @Column(name = "observacoes_terceirizacao", length = 1000)
+    private String observacoesTerceirizacao;
+
     @Column(name = "data_criacao", updatable = false)
     private LocalDateTime dataCriacao = LocalDateTime.now();
 
@@ -60,23 +78,54 @@ public class ServicoProtetico {
     }
 
     // GETTERS E SETTERS
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
 
-    public Protetico getProtetico() { return protetico; }
-    public void setProtetico(Protetico protetico) { this.protetico = protetico; }
+    public Long getId() {
+        return id;
+    }
 
-    public TipoServico getTipoServico() { return tipoServico; }
-    public void setTipoServico(TipoServico tipoServico) { this.tipoServico = tipoServico; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public BigDecimal getPreco() { return preco; }
-    public void setPreco(BigDecimal preco) { this.preco = preco; }
+    public Protetico getProtetico() {
+        return protetico;
+    }
 
-    public boolean isAtivo() { return ativo; }
-    public void setAtivo(boolean ativo) { this.ativo = ativo; }
+    public void setProtetico(Protetico protetico) {
+        this.protetico = protetico;
+    }
 
-    public String getDescricao() { return descricao; }
-    public void setDescricao(String descricao) { this.descricao = descricao; }
+    public TipoServico getTipoServico() {
+        return tipoServico;
+    }
+
+    public void setTipoServico(TipoServico tipoServico) {
+        this.tipoServico = tipoServico;
+    }
+
+    public BigDecimal getPreco() {
+        return preco;
+    }
+
+    public void setPreco(BigDecimal preco) {
+        this.preco = preco;
+    }
+
+    public boolean isAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(boolean ativo) {
+        this.ativo = ativo;
+    }
+
+    public String getDescricao() {
+        return descricao;
+    }
+
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
+    }
 
     // MANTÉM horas no banco
     public Integer getTempoMedioHoras() {
@@ -108,9 +157,103 @@ public class ServicoProtetico {
         }
     }
 
-    public LocalDateTime getDataCriacao() { return dataCriacao; }
-    public void setDataCriacao(LocalDateTime dataCriacao) { this.dataCriacao = dataCriacao; }
+    // Campos de terceirização
+    public PoliticaExecucaoServico getPoliticaExecucao() {
+        return politicaExecucao;
+    }
 
-    public LocalDateTime getDataAtualizacao() { return dataAtualizacao; }
-    public void setDataAtualizacao(LocalDateTime dataAtualizacao) { this.dataAtualizacao = dataAtualizacao; }
+    public void setPoliticaExecucao(PoliticaExecucaoServico politicaExecucao) {
+        this.politicaExecucao = politicaExecucao;
+    }
+
+    public BigDecimal getPrecoTerceirizado() {
+        return precoTerceirizado;
+    }
+
+    public void setPrecoTerceirizado(BigDecimal precoTerceirizado) {
+        this.precoTerceirizado = precoTerceirizado;
+    }
+
+    public Integer getPrazoTerceirizadoHoras() {
+        return prazoTerceirizadoHoras;
+    }
+
+    public void setPrazoTerceirizadoHoras(Integer prazoTerceirizadoHoras) {
+        this.prazoTerceirizadoHoras = prazoTerceirizadoHoras;
+    }
+
+    public Long getTerceirizadoPreferidoId() {
+        return terceirizadoPreferidoId;
+    }
+
+    public void setTerceirizadoPreferidoId(Long terceirizadoPreferidoId) {
+        this.terceirizadoPreferidoId = terceirizadoPreferidoId;
+    }
+
+    public String getObservacoesTerceirizacao() {
+        return observacoesTerceirizacao;
+    }
+
+    public void setObservacoesTerceirizacao(String observacoesTerceirizacao) {
+        this.observacoesTerceirizacao = observacoesTerceirizacao;
+    }
+
+    public LocalDateTime getDataCriacao() {
+        return dataCriacao;
+    }
+
+    public void setDataCriacao(LocalDateTime dataCriacao) {
+        this.dataCriacao = dataCriacao;
+    }
+
+    public LocalDateTime getDataAtualizacao() {
+        return dataAtualizacao;
+    }
+
+    public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
+        this.dataAtualizacao = dataAtualizacao;
+    }
+
+    // Métodos auxiliares para lógica de negócio
+    @Transient
+    public boolean aceitaTerceirizacao() {
+        return politicaExecucao == PoliticaExecucaoServico.TERCEIRIZADO ||
+                politicaExecucao == PoliticaExecucaoServico.PROPRIO_OU_TERCEIRIZADO;
+    }
+
+    @Transient
+    public boolean executaProprio() {
+        return politicaExecucao == PoliticaExecucaoServico.PROPRIO ||
+                politicaExecucao == PoliticaExecucaoServico.PROPRIO_OU_TERCEIRIZADO;
+    }
+
+    @Transient
+    public Integer getPrazoTerceirizadoDias() {
+        if (prazoTerceirizadoHoras == null) {
+            return null;
+        }
+        return (int) Math.ceil(prazoTerceirizadoHoras / 24.0);
+    }
+
+    @Transient
+    public void setPrazoTerceirizadoDias(Integer prazoTerceirizadoDias) {
+        if (prazoTerceirizadoDias == null) {
+            this.prazoTerceirizadoHoras = null;
+        } else {
+            this.prazoTerceirizadoHoras = prazoTerceirizadoDias * 24;
+        }
+    }
+
+    // Método toString para debug (opcional)
+    @Override
+    public String toString() {
+        return "ServicoProtetico{" +
+                "id=" + id +
+                ", tipoServico=" + tipoServico +
+                ", preco=" + preco +
+                ", ativo=" + ativo +
+                ", politicaExecucao=" + politicaExecucao +
+                ", precoTerceirizado=" + precoTerceirizado +
+                '}';
+    }
 }
