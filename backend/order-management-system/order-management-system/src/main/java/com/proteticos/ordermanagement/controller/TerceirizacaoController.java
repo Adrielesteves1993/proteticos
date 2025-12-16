@@ -230,7 +230,8 @@ public class TerceirizacaoController {
     @GetMapping("/disponiveis")
     public ResponseEntity<?> listarProteticosDisponiveis(
             @RequestParam(required = false) Long pedidoId,
-            @RequestParam(required = false) TipoServico tipoServico) {
+            @RequestParam(required = false) String tipoServico) {
+
         try {
             if (pedidoId == null && tipoServico == null) {
                 throw new RuntimeException("Informe pedidoId ou tipoServico");
@@ -238,12 +239,14 @@ public class TerceirizacaoController {
 
             List<ProteticoSimplesDTO> response;
 
-            if (pedidoId != null) {
-                response = terceirizacaoService.listarProteticosDisponiveis(pedidoId, tipoServico);
+            if (tipoServico != null) {
+                // Usa o NOVO método que aceita String
+                response = terceirizacaoService.buscarProteticosSimplesPorServico(tipoServico);
+            } else if (pedidoId != null) {
+                // Para pedidoId, ainda usa o método antigo (precisa do tipoServico do pedido)
+                throw new RuntimeException("Informe tipoServico ou implemente busca do pedido");
             } else {
-                // Se não tem pedidoId, busca apenas por tipo de serviço
-                // (Você pode precisar adaptar o service para isso)
-                throw new RuntimeException("Funcionalidade em desenvolvimento");
+                throw new RuntimeException("Parâmetros inválidos");
             }
 
             return ResponseEntity.ok(response);
@@ -255,4 +258,50 @@ public class TerceirizacaoController {
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
+
+    // ============ NOVO ENDPOINT ADICIONADO ============
+
+    /**
+     * NOVO ENDPOINT: Lista protéticos que oferecem um tipo específico de serviço
+     * GET /api/terceirizacoes/disponiveis-por-servico?tipoServico=protese_total&excluirProteticoId=1
+     *
+     * Para terceirização: mostra quem pode executar este serviço
+     */
+    @GetMapping("/disponiveis-por-servico")
+    public ResponseEntity<?> listarProteticosPorServico(
+            @RequestParam String tipoServico,
+            @RequestParam(required = false) Long excluirProteticoId) {
+
+        System.out.println("=== ENDPOINT: /disponiveis-por-servico ===");
+        System.out.println("tipoServico: " + tipoServico);
+        System.out.println("excluirProteticoId: " + excluirProteticoId);
+
+        try {
+            if (tipoServico == null || tipoServico.trim().isEmpty()) {
+                throw new RuntimeException("Informe o tipoServico");
+            }
+
+            // Chama o método NOVO do service
+            List<ProteticoSimplesDTO> proteticos = terceirizacaoService
+                    .listarProteticosPorServicoAtivos(tipoServico, excluirProteticoId);
+
+            System.out.println("✅ Retornando " + proteticos.size() + " protéticos");
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", proteticos);
+            response.put("total", proteticos.size());
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            System.out.println("❌ Erro: " + e.getMessage());
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
 }

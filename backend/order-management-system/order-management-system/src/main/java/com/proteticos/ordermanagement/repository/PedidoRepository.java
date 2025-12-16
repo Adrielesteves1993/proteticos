@@ -30,8 +30,11 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     // Buscar pedidos por dentista
     List<Pedido> findByDentistaId(Long dentistaId);
 
-    // Buscar pedidos por protético
+    // Buscar pedidos por protético (titular)
     List<Pedido> findByProteticoId(Long proteticoId);
+
+    // ✅ NOVO: Buscar pedidos por protético terceirizado
+    List<Pedido> findByProteticoTerceirizadoId(Long proteticoTerceirizadoId);
 
     // ✅ CORREÇÃO: Mudar para statusPedido
     List<Pedido> findByStatusPedido(StatusPedido statusPedido);
@@ -48,4 +51,11 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     List<Pedido> findByDataPrevistaEntregaAndStatusPedido(
             LocalDate data,
             StatusPedido statusPedido);
+
+    // ✅ NOVO: Buscar pedidos com terceirização
+    @Query("SELECT p FROM Pedido p WHERE p.statusTerceirizacao IS NOT NULL AND p.statusTerceirizacao != 'NAO_TERCEIRIZADO'")
+    List<Pedido> findComTerceirizacao();
+
+    // ✅ NOVO: Buscar pedidos por status de terceirização
+    List<Pedido> findByStatusTerceirizacao(com.proteticos.ordermanagement.model.StatusTerceirizacao status);
 }
