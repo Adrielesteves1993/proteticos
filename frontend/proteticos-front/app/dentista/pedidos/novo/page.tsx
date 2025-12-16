@@ -57,52 +57,76 @@ export default function NovoPedido() {
     }
   }
 
-  const carregarServicosDoProtetico = async (proteticoId: string) => {
-    if (!proteticoId) {
-      setServicosDisponiveis([])
-      setServicoSelecionado(null)
-      return
-    }
-
-    try {
-      setCarregandoServicos(true)
-      console.log(`🔄 Buscando serviços do protético ${proteticoId}...`)
-      
-      const response = await fetch(`http://localhost:8080/api/proteticos/${proteticoId}/servicos/ativos`)
-      if (response.ok) {
-        const servicos = await response.json()
-        console.log(`✅ ${servicos.length} serviços ativos carregados:`, servicos)
-        
-        // Formata os serviços para exibição
-        const servicosFormatados = servicos.map((servico: any) => ({
-          id: servico.id,
-          tipoServico: servico.tipoServico,
-          tipoServicoNome: formatarNomeServico(servico.tipoServico),
-          preco: servico.preco,
-          tempoMedioDias: servico.tempoMedioDias || 7,
-          descricao: servico.descricao || '',
-          ativo: servico.ativo
-        }))
-        
-        setServicosDisponiveis(servicosFormatados)
-        
-        // Limpa seleção de serviço anterior
-        setServicoSelecionado(null)
-        setDados(prev => ({
-          ...prev,
-          tipoServico: '',
-          valorCobrado: '',
-          prazoEstimado: ''
-        }))
-      } else {
-        console.error('❌ Erro ao carregar serviços:', response.status)
-      }
-    } catch (error) {
-      console.error('Erro ao carregar serviços:', error)
-    } finally {
-      setCarregandoServicos(false)
-    }
+ const carregarServicosDoProtetico = async (proteticoId: string) => {
+  if (!proteticoId) {
+    setServicosDisponiveis([])
+    setServicoSelecionado(null)
+    return
   }
+
+  try {
+    setCarregandoServicos(true)
+    console.log(`🔄 Buscando serviços do protético ${proteticoId}...`)
+    
+    // USAR O NOVO ENDPOINT (serviços ativos que o protético EXECUTA)
+    const response = await fetch(`http://localhost:8080/api/servicos-protetico/protetico/${proteticoId}/ativos`)
+    
+    if (response.ok) {
+      const servicos = await response.json()
+      console.log(`✅ ${servicos.length} serviços ativos carregados:`, servicos)
+      
+      // FILTRAR: só serviços que o protético EXECUTA (não apenas terceiriza)
+      const servicosExecutaveis = servicos.filter((servico: any) => {
+        // Só mostrar serviços que o protético executa (próprio ou próprio/terceirizado)
+        return servico.politicaExecucao === 'proprio' || 
+               servico.politicaExecucao === 'proprio_ou_terceirizado'
+      })
+      
+      console.log(`✅ ${servicosExecutaveis.length} serviços executáveis:`, servicosExecutaveis)
+      
+      // Formata os serviços para exibição
+      const servicosFormatados = servicosExecutaveis.map((servico: any) => ({
+        id: servico.id,
+        tipoServico: servico.tipoServico,
+        tipoServicoNome: servico.nomeServico || formatarNomeServico(servico.tipoServico),
+        preco: servico.preco,
+        tempoMedioDias: servico.tempoMedioDias || servico.tempoMedioHoras ? Math.ceil(servico.tempoMedioHoras / 24) : 7,
+        descricao: servico.descricao || '',
+        ativo: servico.ativo,
+        // NOVOS CAMPOS (para debug/info)
+        politicaExecucao: servico.politicaExecucao,
+        podeTerceirizar: servico.politicaExecucao === 'proprio_ou_terceirizado'
+      }))
+      
+      setServicosDisponiveis(servicosFormatados)
+      
+      // Limpa seleção de serviço anterior
+      setServicoSelecionado(null)
+      setDados(prev => ({
+        ...prev,
+        tipoServico: '',
+        valorCobrado: '',
+        prazoEstimado: ''
+      }))
+    } else {
+      console.error('❌ Erro ao carregar serviços:', response.status)
+    }
+  } catch (error) {
+    console.error('Erro ao carregar serviços:', error)
+  } finally {
+    setCarregandoServicos(false)
+  }
+}
+  // Adicione esta função para mostrar mais detalhes sobre o serviço
+const getInfoPoliticaExecucao = (politica: string) => {
+  const politicas = {
+    'proprio': { icon: '🏭', label: 'Executo na minha oficina', desc: 'O protético produz este serviço em seu próprio laboratório' },
+    'proprio_ou_terceirizado': { icon: '🔄', label: 'Posso executar ou terceirizar', desc: 'O protético pode executar ou repassar para outro profissional' },
+    'terceirizado': { icon: '🤝', label: 'Apenas terceirizado', desc: 'O protético sempre repassa este serviço para outro profissional' },
+    'nao_oferecido': { icon: '❌', label: 'Não ofereço', desc: 'O protético não trabalha com este tipo de serviço' }
+  }
+  return politicas[politica as keyof typeof politicas] || { icon: '❓', label: 'Indefinido', desc: 'Política não definida' }
+}
 
   const handleSelecionarProtetico = (proteticoId: string) => {
     setDados(prev => ({ ...prev, proteticoId }))
