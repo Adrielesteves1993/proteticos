@@ -28,7 +28,7 @@ public class TerceirizacaoService {
     private ProteticoRepository proteticoRepository;
 
     @Autowired
-    private TerceirizacaoRepository terceirizacaoRepository; // ADICIONE ESTE
+    private TerceirizacaoRepository terceirizacaoRepository;
 
     @Autowired
     private PedidoService pedidoService;
@@ -36,6 +36,9 @@ public class TerceirizacaoService {
     @Autowired
     @Lazy
     private ServicoProteticoService servicoProteticoService;
+
+    @Autowired
+    private ServicoProteticoRepository servicoProteticoRepository;
 
     // ============ MÉTODOS QUE FALTAM ============
 
@@ -81,10 +84,21 @@ public class TerceirizacaoService {
         final TipoServico tipoFinal = tipoParaBusca;
 
         // Busca protéticos que aceitam terceirização para este tipo de serviço
+        // ATUALIZADO: Verifica pelos serviços do protético, não mais pelo campo aceitaTerceirizacao
         List<Protetico> proteticos = proteticoRepository.findAll()
                 .stream()
-                .filter(p -> p.isAceitaTerceirizacao())
-                .filter(p -> p.aceitaTerceirizacaoPara(tipoFinal))
+                // NOVA LÓGICA: Filtra protéticos que têm serviço ativo que permite terceirização
+                .filter(p -> {
+                    // Verifica se tem serviços que permitem terceirização para este tipo
+                    return p.getServicosProtetico().stream()
+                            .anyMatch(servico ->
+                                    servico.isAtivo() &&
+                                            servico.getTipoServico() == tipoFinal &&
+                                            servico.getPoliticaExecucao() != null &&
+                                            (servico.getPoliticaExecucao() == PoliticaExecucaoServico.TERCEIRIZADO ||
+                                                    servico.getPoliticaExecucao() == PoliticaExecucaoServico.PROPRIO_OU_TERCEIRIZADO)  // ← CORREÇÃO
+                            );
+                })
                 .filter(p -> {
                     // Usa a variável final dentro do lambda
                     if (proteticoAtualId == null) {
@@ -129,10 +143,20 @@ public class TerceirizacaoService {
         final TipoServico tipoFinal = tipoServico;
 
         // Busca protéticos que aceitam terceirização para este tipo de serviço
+        // ATUALIZADO: Verifica pelos serviços do protético
         List<Protetico> proteticos = proteticoRepository.findAll()
                 .stream()
-                .filter(p -> p.isAceitaTerceirizacao())
-                .filter(p -> p.aceitaTerceirizacaoPara(tipoFinal))
+                // NOVA LÓGICA: Filtra protéticos que têm serviço ativo que permite terceirização
+                .filter(p -> {
+                    return p.getServicosProtetico().stream()
+                            .anyMatch(servico ->
+                                    servico.isAtivo() &&
+                                            servico.getTipoServico() == tipoFinal &&
+                                            servico.getPoliticaExecucao() != null &&
+                                            (servico.getPoliticaExecucao() == PoliticaExecucaoServico.TERCEIRIZADO ||
+                                                    servico.getPoliticaExecucao() == PoliticaExecucaoServico.PROPRIO_OU_TERCEIRIZADO)  // ← CORREÇÃO
+                            );
+                })
                 .collect(Collectors.toList());
 
         System.out.println("✅ " + proteticos.size() + " protéticos encontrados");
@@ -154,16 +178,6 @@ public class TerceirizacaoService {
                 .collect(Collectors.toList());
     }
 
-    // ============ MÉTODOS DE TERCEIRIZAÇÃO ============
-
-
-
-    /**
-     * Solicita terceirização de um pedido
-     * @param pedidoId ID do pedido
-     * @param proteticoId ID do protético que ESTÁ solicitando (dono do pedido)
-     * @param request DTO com informações da terceirização
-     */
     /**
      * Solicita terceirização de um pedido
      * @param pedidoId ID do pedido
@@ -217,28 +231,39 @@ public class TerceirizacaoService {
                 throw new RuntimeException("Não é possível terceirizar para si mesmo");
             }
 
-            // 7. Verificar se o protético terceirizado aceita terceirização
-            if (!proteticoTerceirizado.isAceitaTerceirizacao()) {
-                throw new RuntimeException("Este protético não aceita terceirizações");
+            // 7. NOVA VERIFICAÇÃO: Verificar se o protético terceirizado oferece o serviço e permite terceirização
+            ServicoProtetico servicoDoProtetico = servicoProteticoRepository
+                    .findByProteticoIdAndTipoServico(
+                            request.getProteticoTerceirizadoId(),
+                            pedido.getTipoServico()
+                    )
+                    .orElseThrow(() -> new RuntimeException(
+                            "Este protético não oferece o serviço: " + pedido.getTipoServico()
+                    ));
+
+            if (!(servicoDoProtetico.getPoliticaExecucao() == PoliticaExecucaoServico.TERCEIRIZADO ||
+                    servicoDoProtetico.getPoliticaExecucao() == PoliticaExecucaoServico.PROPRIO_OU_TERCEIRIZADO)) {
+                throw new RuntimeException(
+                        "Este protético não aceita terceirização para o serviço: " +
+                                pedido.getTipoServico() +
+                                ". Política: " + servicoDoProtetico.getPoliticaExecucao()
+                );
+            }
+            if (!servicoDoProtetico.isAtivo()) {
+                throw new RuntimeException("O serviço não está ativo para terceirização");
             }
 
-            // 8. Verificar se aceita o tipo de serviço do pedido
-            if (!proteticoTerceirizado.aceitaTerceirizacaoPara(pedido.getTipoServico())) {
-                throw new RuntimeException("Este protético não aceita terceirização para o serviço: " +
-                        pedido.getTipoServico());
-            }
-
-            // 9. Verificar se o pedido pode ser terceirizado (usando método do Pedido)
+            // 8. Verificar se o pedido pode ser terceirizado (usando método do Pedido)
             if (!pedido.podeSerTerceirizado()) {
                 throw new RuntimeException("Este pedido não pode ser terceirizado no momento");
             }
 
-            // 10. Verificar se já existe terceirização em andamento no pedido
+            // 9. Verificar se já existe terceirização em andamento no pedido
             if (pedido.isTerceirizado() && pedido.isTerceirizacaoAtiva()) {
                 throw new RuntimeException("Já existe uma terceirização em andamento para este pedido");
             }
 
-            // 11. Verificar se já existe solicitação para o mesmo protético (evitar duplicatas)
+            // 10. Verificar se já existe solicitação para o mesmo protético (evitar duplicatas)
             Optional<Terceirizacao> solicitacaoDuplicada = terceirizacaoRepository
                     .findByPedidoIdAndProteticoDestinoId(pedidoId, request.getProteticoTerceirizadoId());
 
@@ -252,7 +277,7 @@ public class TerceirizacaoService {
                 }
             }
 
-            // 12. Verificar percentual (se aplicável)
+            // 11. Verificar percentual (se aplicável)
             if (request.getPercentual() != null) {
                 if (request.getPercentual().compareTo(BigDecimal.ZERO) <= 0 ||
                         request.getPercentual().compareTo(new BigDecimal("100")) > 0) {
@@ -262,7 +287,7 @@ public class TerceirizacaoService {
 
             System.out.println("✅ Validações passadas. Criando terceirização...");
 
-            // 13. Usar o método do Pedido para atualizar seus campos internos
+            // 12. Usar o método do Pedido para atualizar seus campos internos
             pedido.solicitarTerceirizacao(
                     proteticoTerceirizado,
                     request.getPercentual(),
@@ -270,13 +295,13 @@ public class TerceirizacaoService {
                     request.getMotivo()
             );
 
-            // 14. Salvar o pedido atualizado
+            // 13. Salvar o pedido atualizado
             Pedido pedidoAtualizado = pedidoRepository.save(pedido);
 
             System.out.println("✅ Pedido atualizado com terceirização! Status: " +
                     pedidoAtualizado.getStatusTerceirizacao());
 
-            // 15. Criar registro na tabela terceirizacoes
+            // 14. Criar registro na tabela terceirizacoes
             Terceirizacao terceirizacao = new Terceirizacao();
             terceirizacao.setProteticoOrigem(proteticoSolicitante);
             terceirizacao.setProteticoDestino(proteticoTerceirizado);
@@ -294,12 +319,12 @@ public class TerceirizacaoService {
                 terceirizacao.setValorCombinado(valorCalculado.doubleValue());
             }
 
-            // 16. Salvar a terceirização
+            // 15. Salvar a terceirização
             Terceirizacao terceirizacaoSalva = terceirizacaoRepository.save(terceirizacao);
 
             System.out.println("✅ Registro de terceirização criado com ID: " + terceirizacaoSalva.getId());
 
-            // 17. Criar DTO de resposta (AJUSTADO PARA SUA ESTRUTURA)
+            // 16. Criar DTO de resposta (AJUSTADO PARA SUA ESTRUTURA)
             TerceirizacaoResponseDTO response = new TerceirizacaoResponseDTO();
             response.setId(terceirizacaoSalva.getId());
             response.setPedidoId(pedidoId);
@@ -397,7 +422,6 @@ public class TerceirizacaoService {
                 terceirizacaoRepository.save(terceirizacao);
             }
 
-
             // 8. Criar DTO de resposta
             TerceirizacaoResponseDTO response = new TerceirizacaoResponseDTO(pedidoAtualizado);
             response.setId(terceirizacaoOpt.map(Terceirizacao::getId).orElse(null));
@@ -472,7 +496,6 @@ public class TerceirizacaoService {
                 terceirizacaoRepository.save(terceirizacao);
             }
 
-
             // 9. Criar DTO de resposta
             TerceirizacaoResponseDTO response = new TerceirizacaoResponseDTO(pedidoAtualizado);
             response.setId(terceirizacaoOpt.map(Terceirizacao::getId).orElse(null));
@@ -533,7 +556,6 @@ public class TerceirizacaoService {
                 terceirizacaoRepository.save(terceirizacao);
             }
 
-
             // 8. Criar DTO de resposta
             TerceirizacaoResponseDTO response = new TerceirizacaoResponseDTO(pedidoAtualizado);
             response.setId(terceirizacaoOpt.map(Terceirizacao::getId).orElse(null));
@@ -584,7 +606,7 @@ public class TerceirizacaoService {
             // 6. Salvar o pedido atualizado
             Pedido pedidoAtualizado = pedidoRepository.save(pedido);
 
-// 7. Atualizar a entidade Terceirizacao se existir
+            // 7. Atualizar a entidade Terceirizacao se existir
             Optional<Terceirizacao> terceirizacaoOpt =
                     terceirizacaoRepository.findFirstByPedidoIdOrderByIdDesc(pedidoId);
 
@@ -594,7 +616,6 @@ public class TerceirizacaoService {
                 terceirizacao.setConcluidoEm(LocalDateTime.now());
                 terceirizacaoRepository.save(terceirizacao);
             }
-
 
             // 8. Criar DTO de resposta
             TerceirizacaoResponseDTO response = new TerceirizacaoResponseDTO(pedidoAtualizado);
@@ -662,7 +683,7 @@ public class TerceirizacaoService {
             // 7. Salvar o pedido atualizado
             Pedido pedidoAtualizado = pedidoRepository.save(pedido);
 
-// 8. Atualizar a entidade Terceirizacao se existir
+            // 8. Atualizar a entidade Terceirizacao se existir
             Optional<Terceirizacao> terceirizacaoOpt = terceirizacaoRepository.findTopByPedidoId(pedidoId);
             if (terceirizacaoOpt.isPresent()) {
                 Terceirizacao terceirizacao = terceirizacaoOpt.get();
@@ -673,7 +694,6 @@ public class TerceirizacaoService {
                 );
                 terceirizacaoRepository.save(terceirizacao);
             }
-
 
             // 9. Criar DTO de resposta
             TerceirizacaoResponseDTO response = new TerceirizacaoResponseDTO(pedidoAtualizado);
@@ -709,7 +729,6 @@ public class TerceirizacaoService {
             // 3. Buscar a entidade Terceirizacao se existir
             Optional<Terceirizacao> terceirizacaoOpt = terceirizacaoRepository.findTopByPedidoId(pedidoId);
 
-
             // 4. Criar DTO de resposta
             TerceirizacaoResponseDTO response = new TerceirizacaoResponseDTO(pedido);
             response.setId(terceirizacaoOpt.map(Terceirizacao::getId).orElse(null));
@@ -724,9 +743,6 @@ public class TerceirizacaoService {
         }
     }
 
-    /**
-     * Lista todas terceirizações de um protético
-     */
     /**
      * Lista todas terceirizações de um protético
      */
@@ -791,8 +807,8 @@ public class TerceirizacaoService {
             throw new RuntimeException("Erro ao listar terceirizações: " + e.getMessage());
         }
     }
+
     // ============ MÉTODOS NOVOS ADICIONADOS ============
-    // NÃO MODIFICA OS MÉTODOS EXISTENTES ACIMA!
 
     /**
      * NOVO MÉTODO: Lista protéticos disponíveis por tipo de serviço (String)
@@ -874,18 +890,25 @@ public class TerceirizacaoService {
             e.printStackTrace();
         }
 
-        // 2. Fallback: usa a lógica original
-        System.out.println("🔄 Usando fallback (busca tradicional)...");
-
-        List<Protetico> todos = proteticoRepository.findAll();
+        // 2. Fallback: usa a lógica atualizada (baseada em serviços)
+        System.out.println("🔄 Usando fallback (busca por serviços)...");
 
         // Cria cópias finais para usar nas lambdas
         final TipoServico tipoFinal = tipoServico;
         final Long excluirIdFinal = excluirProteticoId;
 
-        List<ProteticoSimplesDTO> resultado = todos.stream()
-                .filter(p -> p.isAceitaTerceirizacao())
-                .filter(p -> p.aceitaTerceirizacaoPara(tipoFinal))
+        List<ProteticoSimplesDTO> resultado = proteticoRepository.findAll().stream()
+                .filter(p -> {
+                    // Verifica se tem serviços que permitem terceirização para este tipo
+                    return p.getServicosProtetico().stream()
+                            .anyMatch(servico ->
+                                    servico.isAtivo() &&
+                                            servico.getTipoServico() == tipoFinal &&
+                                            servico.getPoliticaExecucao() != null &&
+                                            (servico.getPoliticaExecucao() == PoliticaExecucaoServico.TERCEIRIZADO ||
+                                                    servico.getPoliticaExecucao() == PoliticaExecucaoServico.PROPRIO_OU_TERCEIRIZADO)  // ← CORREÇÃO
+                            );
+                })
                 .filter(p -> excluirIdFinal == null || !p.getId().equals(excluirIdFinal))
                 .map(p -> {
                     ProteticoSimplesDTO dto = new ProteticoSimplesDTO();
@@ -953,15 +976,23 @@ public class TerceirizacaoService {
         } catch (Exception e) {
             System.out.println("⚠️ Fallback para método original: " + e.getMessage());
 
-            // Fallback: busca todos e filtra
+            // Fallback: busca todos e filtra por serviços
             List<Protetico> todos = proteticoRepository.findAll();
 
             // Cria cópia final para usar na lambda
             final TipoServico tipoFinal = tipoServico;
 
             return todos.stream()
-                    .filter(p -> p.isAceitaTerceirizacao())
-                    .filter(p -> p.aceitaTerceirizacaoPara(tipoFinal))
+                    .filter(p -> {
+                        return p.getServicosProtetico().stream()
+                                .anyMatch(servico ->
+                                        servico.isAtivo() &&
+                                                servico.getTipoServico() == tipoFinal &&
+                                                servico.getPoliticaExecucao() != null &&
+                                                (servico.getPoliticaExecucao() == PoliticaExecucaoServico.TERCEIRIZADO ||
+                                                        servico.getPoliticaExecucao() == PoliticaExecucaoServico.PROPRIO_OU_TERCEIRIZADO)  // ← CORREÇÃO
+                                );
+                    })
                     .map(p -> {
                         ProteticoSimplesDTO dto = new ProteticoSimplesDTO();
                         dto.setId(p.getId());

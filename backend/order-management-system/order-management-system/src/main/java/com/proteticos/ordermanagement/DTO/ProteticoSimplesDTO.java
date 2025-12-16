@@ -58,7 +58,6 @@ public class ProteticoSimplesDTO {
                 ", nome='" + nome + '\'' +
                 ", email='" + email + '\'' +
                 ", especializacao='" + especializacao + '\'' +
-                ", aceitaTerceirizacao=" + aceitaTerceirizacao +
                 '}';
     }
 }

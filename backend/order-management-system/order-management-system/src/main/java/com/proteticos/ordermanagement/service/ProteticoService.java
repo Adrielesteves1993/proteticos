@@ -73,7 +73,7 @@ public class ProteticoService {
         }
 
         // APENAS este campo existe no seu Protetico.java
-        protetico.setAceitaTerceirizacao(proteticoDTO.isAceitaTerceirizacao());
+//        protetico.setAceitaTerceirizacao(proteticoDTO.isAceitaTerceirizacao());
 
         Protetico atualizado = proteticoRepository.save(protetico);
         return convertToDTO(atualizado);
@@ -108,7 +108,7 @@ public class ProteticoService {
         dto.setEmail(protetico.getEmail());
         dto.setRegistroProfissional(protetico.getRegistroProfissional());
         dto.setEspecializacao(protetico.getEspecializacao());
-        dto.setAceitaTerceirizacao(protetico.isAceitaTerceirizacao());
+//        dto.setAceitaTerceirizacao(protetico.isAceitaTerceirizacao());
         return dto;
     }
 }

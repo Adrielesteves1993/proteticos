@@ -71,7 +71,7 @@ public class DataLoader implements CommandLineRunner {
                 "Zircônia"
         );
         protetico1.setTelefone("(11) 9888-7777");
-        protetico1.setAceitaTerceirizacao(true);
+
         protetico1.setTaxaMinimaTerceirizacao(BigDecimal.valueOf(35.00));
         protetico1.setNotaTerceirizacao(BigDecimal.valueOf(4.5));
         protetico1.setQuantidadeTerceirizacoes(10);
@@ -90,7 +90,7 @@ public class DataLoader implements CommandLineRunner {
                 "Resina"
         );
         protetico2.setTelefone("(11) 9777-6666");
-        protetico2.setAceitaTerceirizacao(false);
+
 
         // Protético 3 - Aceita terceirização (Implantes/Zircônia)
         Protetico protetico3 = new Protetico(
@@ -101,7 +101,7 @@ public class DataLoader implements CommandLineRunner {
                 "Implantes"
         );
         protetico3.setTelefone("(11) 9666-5555");
-        protetico3.setAceitaTerceirizacao(true);
+
         protetico3.setTaxaMinimaTerceirizacao(BigDecimal.valueOf(40.00));
         protetico3.setNotaTerceirizacao(BigDecimal.valueOf(4.8));
         protetico3.setQuantidadeTerceirizacoes(15);

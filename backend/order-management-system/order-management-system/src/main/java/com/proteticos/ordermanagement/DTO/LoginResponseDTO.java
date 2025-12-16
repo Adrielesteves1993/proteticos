@@ -15,7 +15,8 @@ public class LoginResponseDTO {
     // Campos específicos de protético
     private String registroProfissional;
     private String especializacao;
-    private Boolean aceitaTerceirizacao;
+    // COMENTADO: Campo removido - agora a terceirização é por serviço
+    // private Boolean aceitaTerceirizacao;
 
     // Campos específicos de dentista
     private String cro;
@@ -35,7 +36,8 @@ public class LoginResponseDTO {
             Protetico protetico = (Protetico) usuario;
             this.registroProfissional = protetico.getRegistroProfissional();
             this.especializacao = protetico.getEspecializacao();
-            this.aceitaTerceirizacao = protetico.isAceitaTerceirizacao();
+            // COMENTADO: Não use mais este campo
+            // this.aceitaTerceirizacao = protetico.isAceitaTerceirizacao();
         }
 
         if (usuario instanceof Dentista) {
@@ -70,8 +72,11 @@ public class LoginResponseDTO {
     public String getEspecializacao() { return especializacao; }
     public void setEspecializacao(String especializacao) { this.especializacao = especializacao; }
 
+    // COMENTADO: Getters e setters removidos
+    /*
     public Boolean getAceitaTerceirizacao() { return aceitaTerceirizacao; }
     public void setAceitaTerceirizacao(Boolean aceitaTerceirizacao) { this.aceitaTerceirizacao = aceitaTerceirizacao; }
+    */
 
     public String getCro() { return cro; }
     public void setCro(String cro) { this.cro = cro; }

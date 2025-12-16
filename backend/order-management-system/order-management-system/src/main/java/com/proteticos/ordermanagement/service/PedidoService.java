@@ -68,7 +68,7 @@ public class PedidoService {
             // ⚠️ ESTES CAMPOS ESTÃO FALTANDO!
             proteticoDTO.setRegistroProfissional(pedido.getProtetico().getRegistroProfissional());
             proteticoDTO.setEspecializacao(pedido.getProtetico().getEspecializacao());
-            proteticoDTO.setAceitaTerceirizacao(pedido.getProtetico().isAceitaTerceirizacao());
+
 
             dto.setProtetico(proteticoDTO);
         }

@@ -108,10 +108,7 @@ public class CadastroController {
                     protetico.setTelefone(request.getTelefone());
                 }
 
-                // Campos de terceirização
-                if (request.getAceitaTerceirizacao() != null) {
-                    protetico.setAceitaTerceirizacao(request.getAceitaTerceirizacao());
-                }
+
 
                 // ✅ NÃO precisa setTipo() - já está no construtor
                 novoUsuario = protetico;

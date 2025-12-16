@@ -5,12 +5,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "proteticos")
-@PrimaryKeyJoinColumn(name = "usuario_id")  // IMPORTANTE para herança JOINED
+@PrimaryKeyJoinColumn(name = "usuario_id")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class Protetico extends Usuario {  // ← AGORA ESTENDE USUARIO!
+public class Protetico extends Usuario {
 
     // ============ CAMPOS ESPECÍFICOS DO PROTÉTICO ============
     private String telefone;
@@ -21,8 +23,11 @@ public class Protetico extends Usuario {  // ← AGORA ESTENDE USUARIO!
     private String especializacao;
 
     // ============ CAMPOS PARA TERCEIRIZAÇÃO ============
+    // COMENTADO: Campo removido - agora a terceirização é por serviço
+    /*
     @Column(name = "aceita_terceirizacao")
     private boolean aceitaTerceirizacao = false;
+    */
 
     @Column(name = "taxa_minima_terceirizacao", precision = 5, scale = 2)
     private BigDecimal taxaMinimaTerceirizacao = BigDecimal.valueOf(30.00);
@@ -41,6 +46,11 @@ public class Protetico extends Usuario {  // ← AGORA ESTENDE USUARIO!
     @Column(name = "especialidade")
     @Enumerated(EnumType.STRING)
     private Set<TipoServico> especialidadesTerceirizacao = new HashSet<>();
+
+    // ============ RELAÇÃO COM SERVIÇOS ============
+    @OneToMany(mappedBy = "protetico", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("protetico")
+    private List<ServicoProtetico> servicosProtetico = new ArrayList<>();
 
     // ============ CONSTRUTORES ============
     public Protetico() {
@@ -72,11 +82,6 @@ public class Protetico extends Usuario {  // ← AGORA ESTENDE USUARIO!
     }
 
     // ============ GETTERS E SETTERS DA TERCEIRIZAÇÃO ============
-    public boolean isAceitaTerceirizacao() { return aceitaTerceirizacao; }
-    public void setAceitaTerceirizacao(boolean aceitaTerceirizacao) {
-        this.aceitaTerceirizacao = aceitaTerceirizacao;
-    }
-
     public BigDecimal getTaxaMinimaTerceirizacao() { return taxaMinimaTerceirizacao; }
     public void setTaxaMinimaTerceirizacao(BigDecimal taxaMinimaTerceirizacao) {
         this.taxaMinimaTerceirizacao = taxaMinimaTerceirizacao;
@@ -100,6 +105,15 @@ public class Protetico extends Usuario {  // ← AGORA ESTENDE USUARIO!
         this.especialidadesTerceirizacao = especialidadesTerceirizacao;
     }
 
+    // ============ GETTERS E SETTERS DOS SERVIÇOS ============
+    public List<ServicoProtetico> getServicosProtetico() {
+        return servicosProtetico;
+    }
+
+    public void setServicosProtetico(List<ServicoProtetico> servicosProtetico) {
+        this.servicosProtetico = servicosProtetico;
+    }
+
     // ============ MÉTODOS AUXILIARES ============
     public void adicionarEspecialidade(TipoServico especialidade) {
         this.especialidadesTerceirizacao.add(especialidade);
@@ -109,12 +123,23 @@ public class Protetico extends Usuario {  // ← AGORA ESTENDE USUARIO!
         this.especialidadesTerceirizacao.remove(especialidade);
     }
 
+    // MÉTODO ATUALIZADO: Verifica se aceita terceirização para um tipo de serviço
     public boolean aceitaTerceirizacaoPara(TipoServico tipoServico) {
-        if (!aceitaTerceirizacao) {
-            return false;
+        // PRIMEIRO: Verifica pelos serviços cadastrados (sistema novo)
+        if (this.servicosProtetico != null && !this.servicosProtetico.isEmpty()) {
+            return this.servicosProtetico.stream()
+                    .anyMatch(servico ->
+                            servico.isAtivo() &&
+                                    servico.getTipoServico() == tipoServico &&  // Note: mantenha tipoServico
+                                    servico.getPoliticaExecucao() != null &&
+                                    (servico.getPoliticaExecucao() == PoliticaExecucaoServico.TERCEIRIZADO ||
+                                            servico.getPoliticaExecucao() == PoliticaExecucaoServico.PROPRIO_OU_TERCEIRIZADO)  // ← CORREÇÃO
+                    );
         }
+
+        // SEGUNDO: Fallback para especialidades (sistema antigo - mantém compatibilidade)
         if (especialidadesTerceirizacao == null || especialidadesTerceirizacao.isEmpty()) {
-            return true;
+            return false;
         }
         return especialidadesTerceirizacao.contains(tipoServico);
     }
@@ -141,7 +166,7 @@ public class Protetico extends Usuario {  // ← AGORA ESTENDE USUARIO!
                 ", nome='" + getNome() + '\'' +
                 ", email='" + getEmail() + '\'' +
                 ", registroProfissional='" + registroProfissional + '\'' +
-                ", aceitaTerceirizacao=" + aceitaTerceirizacao +
+                ", servicos=" + (servicosProtetico != null ? servicosProtetico.size() : 0) +
                 '}';
     }
 }

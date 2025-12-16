@@ -22,6 +22,5 @@ public interface ProteticoRepository extends JpaRepository<Protetico, Long> {
     // Buscar por nome
     List<Protetico> findByNomeContaining(String nome);
 
-    // Opcional: Buscar protéticos que aceitam terceirização
-    List<Protetico> findByAceitaTerceirizacaoTrue();
+
 }
